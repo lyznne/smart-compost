@@ -1,0 +1,47 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}
+Home
+{% endblock %}
+
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css' ) }}">
+{% endblock %}
+
+{% block content %}
+<div class="home-body" id="home">
+
+    <div class="container">
+        <div class="form-container">
+            <!-- header  -->
+            <div class="header">
+                <div class="header-text">
+                    <h1>Welcome to Smart Compost</h1>
+                    <p>Building a sustainable future together!</p>
+                </div>
+            </div>
+
+            <!-- end header  -->
+
+
+            <div class="form-card">
+
+                <h1 class="title">
+                    Welcome, {{ user }}!
+                </h1>
+
+            </div>
+
+
+        </div>
+    </div>
+    <!-- footer  -->
+    {% include 'includes/footer.html' %}
+
+</div>
+
+{% endblock %}
+{% block javascripts %}
+
+{% endblock %}

@@ -1,0 +1,281 @@
+#signin {
+    height: 100%;
+    /* text-align: center; */
+}
+
+.container {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.form-container {
+    border: 2px solid transparent;
+    padding: var(--padd-lg) var(--padd-md);
+
+
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-direction: column;
+    gap: var(--padd-xl);
+
+
+    max-height: 400px;
+    min-height: 380px;
+    width: 400px;
+    max-width: 480px;
+
+    background: linear-gradient(#01173f, #001530) padding-box,
+        linear-gradient(145deg, transparent 35%, #30b852, #f9b17a) border-box;
+    box-sizing: border-box;
+    border-radius: 16px;
+    background-size: 200% 100%;
+    animation: gradient 5s ease infinite;
+    text-align: center;
+
+}
+
+.container .header {
+    width: 100%;
+    margin-bottom: var(--padd-md);
+}
+
+.container .header .header-text h1 {
+    font-size: 22px;
+    line-height: 32px;
+    color: var(--lavender);
+    margin-bottom: var(--padd-sm);
+    letter-spacing: .5px;
+}
+
+.container .header .header-text p {
+    font-size: 15px;
+    /* color: var(--accent-light-c); */
+    color: var(--green);
+    letter-spacing: .8px;
+}
+
+.container .form-card {
+    width: 96%;
+    padding: var(--padd-sm);
+
+}
+
+
+
+.container .form-card .form-submit-btn {
+    position: relative;
+    cursor: pointer;
+    width: 89%;
+    padding: .65rem var(--padd-lg);
+    border: 0;
+    border-radius: 5px;
+    font-size: 17px;
+    text-transform: uppercase;
+    background: radial-gradient(ellipse at bottom,
+            rgba(48, 184, 82, 0.623) 0%,
+            rgba(26, 29, 96, 0.2) 45%);
+
+    box-shadow: inset 0 0 0 1px rgba(48, 184, 82, 0.1);
+
+
+    color: var(--lavender);
+
+    transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+    margin: var(--padd-md) 0;
+}
+
+.container .form-card .form-submit-btn::before {
+    content: "";
+    height: 1px;
+
+    position: absolute;
+    bottom: 0;
+    left: 15%;
+
+    background: rgba(26, 29, 96, 0.2);
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(48, 184, 82, 0.781) 50%,
+            rgba(255, 255, 255, 0) 100%);
+
+
+    transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+
+}
+
+.form-card form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--padd-lg);
+    align-items: center;
+}
+
+.form-card .form-group {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    margin-bottom: var(--padd-sm);
+    width: 100%;
+}
+
+.form-card .form-group label {
+    position: absolute;
+    right: 0;
+    bottom: 50%;
+    transform: translate(-50%, 50%);
+}
+
+.form-card .form-group input {
+    width: 100%;
+    padding: .65rem var(--padd-lg);
+    border: 0;
+    border-radius: 5px;
+    font-size: 17px;
+    color: var(--lavender);
+    box-shadow: inset 0 0 0 1px rgba(48, 184, 82, 0.1);
+    background: rgba(255, 255, 255, 0.009);
+}
+
+.form-card .form-group input:focus {
+    border: 1px solid inset 0 0 0 1px rgba(48, 184, 82, 0.3);
+}
+
+.form-options {
+    display: flex;
+    width: 90%;
+    justify-content: space-between;
+}
+
+
+.forgot-password {
+    font-size: 14px;
+    color: var(--green);
+    text-decoration: none;
+    text-transform: lowercase;
+
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkbox-container {
+    display: block;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    gap: .4rem;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+    position: relative;
+    top: 0;
+    left: 0;
+    height: 1.3em;
+    width: 1.3em;
+    background-color: rgba(196, 252, 224, 0.29);
+    border-radius: 5px;
+    transition: 300ms;
+}
+
+/* When the checkbox is checked, add a blue background */
+.checkbox-container input:checked~.checkmark {
+    background-color: var(--green);
+    border-radius: .5rem;
+    animation: pulse 500ms ease-in-out;
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+/* Show the checkmark when checked */
+.checkbox-container input:checked~.checkmark:after {
+    display: block;
+}
+
+/* Style the checkmark/indicator */
+.checkbox-container .checkmark:after {
+    left: 0.45em;
+    top: 0.25em;
+    width: 0.25em;
+    height: 0.5em;
+    border: solid #E0E0E2;
+    border-width: 0 0.15em 0.15em 0;
+    transform: rotate(45deg);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 #0B6E4F90;
+        rotate: 20deg;
+    }
+
+    50% {
+        rotate: -20deg;
+    }
+
+    75% {
+        box-shadow: 0 0 0 10px #0B6E4F60;
+    }
+
+    100% {
+        box-shadow: 0 0 0 13px #0B6E4F30;
+        rotate: 0;
+    }
+}
+
+
+
+
+
+
+/* ===== responsive design ==== */
+/* ===== +  small devices + =====  */
+@media only screen and (max-width: 540px) {
+    .form-container {
+        max-height: 450px;
+
+    }
+}
+
+/* ===== +  medium devices + =====  */
+
+@media only screen and (min-width: 768px) and (max-width: 998px) {}
+
+
+
+
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
