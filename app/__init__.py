@@ -24,7 +24,6 @@ from flask_login import LoginManager
 
 
 from .util import gen_token, setup_logging
-from importlib import import_module
 
 from dotenv import load_dotenv
 
@@ -98,8 +97,12 @@ def create_app(config_name):
     """
     Application factory for creating a Flask app instance.
     """
+
     app = Flask(__name__)
+
+    # Load configuration from the provided config class
     app.config.from_object(config_name)
+
     # Set up custom logs
     setup_logging()
 
@@ -107,6 +110,9 @@ def create_app(config_name):
     gen_token()
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY_TOKEN", secrets.token_hex(32))
     app.config["SESSION_COOKIE_NAME"] = os.getenv("SESSION_COOKIE_NAME")
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
     # Configure the database
 
     app.config["SQLALCHEMY_DATABASE_URI"] = (

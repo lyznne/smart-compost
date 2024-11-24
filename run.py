@@ -9,10 +9,12 @@ SMART COMPOST - MODEL PROJECT.
 
                                     Copyright (c) 2024      - enos.vercel.app
 '''
+
+
 # Import required modules
 from livereload import Server
 from app import create_app
-from app.config import DevelopmentConfig
+from app.config import  DevelopmentConfig
 
 # ---
 

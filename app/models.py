@@ -19,6 +19,7 @@ from flask_login import UserMixin
 from datetime import datetime
 from app import db, login_manager
 from app.util import hash_pass
+from werkzeug.security import generate_password_hash,check_password_hash
 
 
 class Users(db.Model, UserMixin):
@@ -28,7 +29,7 @@ class Users(db.Model, UserMixin):
     first_name = db.Column(db.String(64), unique=True, index=True)
     last_name = db.Column(db.String(64), index=True)
     email = db.Column(db.String(120), unique=True, index=True)
-    password = db.Column(db.String(100))
+    password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -38,12 +39,25 @@ class Users(db.Model, UserMixin):
                 value = value[0]
 
             if property == "password":
-                value = hash_pass(value)
+                self.password = value
+                # self.password = value
+
 
             setattr(self, property, value)
 
     def __repr__(self):
         return f"<User {self.first_name} {self.last_name}>"
+
+    @property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def password(self,password):
+        self.password_hash  = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 def create_sample_user():
@@ -52,18 +66,18 @@ def create_sample_user():
     """
     existing_user = Users.query.filter_by(email="emuthiani26@gmail.com").first()
     if existing_user:
-        print("Enos already exists.")
+        print(" User already exists.")
         return existing_user
 
     sample_user = Users(
         first_name="Enos",
         last_name="Muthiani",
         email="emuthiani26@gmail.com",
-        password=hash_pass("password"),
+        password="enos",
     )
     db.session.add(sample_user)
     db.session.commit()
-    print("Enos created and saved to the database.")
+    print(f" successfully created { sample_user } and saved!")
     return sample_user
 
 

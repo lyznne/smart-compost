@@ -25,24 +25,25 @@ from flask import request
 blueprint = Blueprint("main", __name__)
 
 
-# home route
+# Home route
 @blueprint.route("/", methods=["GET"])
 @login_required
 def home():
     """
-    Home
+    Home route (requires login).
     """
-    print("current_user", current_user)
+
     return render_template("app/index.html", user=current_user)
 
 
-# login route
-@blueprint.route("/signin", methods=("GET", "POST"))
-def signin() -> Response:
-    """handle user signin"""
+# Login route
+@blueprint.route("/signin", methods=["GET", "POST"])
+def signin():
+    """Handle user signin"""
 
-    if current_user.is_authenticated:
-        return redirect(url_for(".home"))
+    # if current_user.is_authenticated:
+    #     print("User already authenticated:", current_user.email)
+    #     return redirect(url_for(".home"))
 
     if request.method == "POST":
         email = request.form.get("email")
@@ -53,19 +54,28 @@ def signin() -> Response:
 
         if user is None:
             flash("User does not exist", "danger")
+
             return render_template("auth/signin.html")
+
+        print(user.verify_password(password))
         # Verify the password
-        if verify_pass(password, user.password):
-            login_user(user, remember=remember)
-            flash("Welcome back!", "success")
-            return redirect(url_for(".home"))
+        if user.verify_password(password):
+            try:
+
+                login_user(user, remember=remember)
+                flash("Welcome back!", "success")
+                return redirect(url_for(".home"))
+            except Exception as e:
+                print("Error in login_user:", e)
         else:
+
             flash("Invalid email or password", "error")
             return render_template("auth/signin.html")
 
     return render_template("auth/signin.html")
 
 
+# Forgot password route
 @blueprint.route("/forgot-password", methods=["GET"])
 def forgot_password():
     """
@@ -74,7 +84,7 @@ def forgot_password():
     return render_template("auth/forgot-password.html")
 
 
-# logout user
+# Logout user
 @blueprint.route("/signout")
 @login_required
 def signout():
@@ -83,31 +93,11 @@ def signout():
     return redirect(url_for(".signin"))
 
 
-@blueprint.errorhandler(404)
-def not_found_error(error):
-    return render_template("errors/404.html"), 404
-
-
-@blueprint.errorhandler(500)
-def internal_error(error):
-    return render_template("errors/500.html"), 500
-
-
-# Single unauthorized_handler
+# Single unauthorized handler for Flask-Login
 @login_manager.unauthorized_handler
 def unauthorized_handler():
     """
-    Redirect unauthorized users to the login page or show a custom page.
+    Redirect unauthorized users to the login page.
     """
     flash("You must be logged in to access this page.", "warning")
-    return redirect(url_for(".signin"))
-
-
-# @login_manager.unauthorized_handler
-# def unauthorized_handler():
-#     return render_template("errors/403.html"), 403
-
-
-# @blueprint.errorhandler(403)
-# def access_forbidden(error):
-#     return render_template("errors/403.html"), 403
+    return redirect(url_for("main.signin"))

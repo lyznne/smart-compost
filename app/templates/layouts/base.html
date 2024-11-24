@@ -16,23 +16,26 @@ SMART COMPOST - MODEL PROJECT.
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-        {% include "includes/meta.html" %}
+        <head>
+                {% include "includes/meta.html" %}
 
-        <!-- specific css goes here  -->
-        {% block stylesheets %}
-        {% endblock stylesheets %}
-</head>
+                <!-- specific css goes here  -->
+                {% block stylesheets %}
+                {% endblock stylesheets %}
+        </head>
 
-<body>
-        <div>
-            {% block content %}{% endblock content %}
-
-        </div>
+        <body>
+                <div class="body">
 
 
-        <!-- Specific JS goes HERE -->
-        {% block javascripts %}{% endblock %}
-</body>
+                        {% include 'includes/flash-messages.html' %}
+                        {% block content %}{% endblock %}
+
+
+
+                </div>
+                <!-- Specific JS goes HERE -->
+                {% block javascripts %}{% endblock %}
+        </body>
 
 </html>

@@ -22,18 +22,6 @@ import logging
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-def hash_pass(password):
-    """Hash a password for storing."""
-    password = str(password)
-    hashed = generate_password_hash(password, method='pbkdf2:sha256')
-    return hashed
-
-
-def verify_pass(provided_password, stored_password):
-    """Verify a stored password against the provided password."""
-    return check_password_hash(stored_password, provided_password)
-
-
 # util function to gen secret key
 def gen_token():
     """
@@ -96,6 +84,16 @@ def setup_logging():
     logger.error("")
 
 
+def hash_pass(password):
+    """Hash a password for storing."""
+    # Flask's generate_password_hash automatically salts and hashes the password.
+    return generate_password_hash(password)
+
+
+def verify_pass(provided_password, stored_password):
+    """Verify a stored password against the provided password."""
+    # Flask's check_password_hash verifies the provided password against the stored hash.
+    return check_password_hash(stored_password, provided_password)
 
 
 # def verify_pass(provided_password, stored_password):

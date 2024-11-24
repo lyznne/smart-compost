@@ -38,13 +38,15 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "your_email@example.com")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "your_password")
     SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME")
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "SQLALCHEMY_DATABASE_NAME", "smart-compost.db"
-    )
-    SQLALCHEMY_TRACK_MODIFICATION = False
-    REMEMBER_COOKIE_DURATION = timedelta(days=7)
-    SESSION_PROTECTION= "strong"
 
+    # Correct SQLAlchemy Database URI
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "SQLALCHEMY_DATABASE_URI",
+        f"sqlite:///{os.path.join(basedir, 'smart-compost.db')}",
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    REMEMBER_COOKIE_DURATION = timedelta(days=7)
+    SESSION_PROTECTION = "strong"
 
 
 class DevelopmentConfig(Config):
