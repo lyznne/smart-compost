@@ -10,34 +10,33 @@ Home
 {% endblock %}
 
 {% block content %}
-<div class="home-body" id="home">
+<div class="home-body">
+{% include 'includes/navbar.html' %}
+    <!-- home dashboard  -->
+    <section id="home">
 
-    <div class="container">
-        <div class="form-container">
-            <!-- header  -->
-            <div class="header">
-                <div class="header-text">
-                    <h1>Welcome to Smart Compost</h1>
-                    <p>Building a sustainable future together!</p>
-                </div>
-            </div>
-
-            <!-- end header  -->
-
-
-            <div class="form-card">
-
-                <h1 class="title">
-                    Welcome, {{ user }}!
-                </h1>
-
+        <div class="home-container">
+            <div class="center">
+                {% include 'app/components/home.html' %}
             </div>
 
 
         </div>
-    </div>
+    </section>
+
+    <!-- wifi section  -->
+    <section id="wifi"></section>
+
+    <!-- stats & docs  -->
+    <section id="stats"></section>
+
+    <!-- settings  -->
+    <section id="settings"></section>
+
     <!-- footer  -->
     {% include 'includes/footer.html' %}
+
+
 
 </div>
 

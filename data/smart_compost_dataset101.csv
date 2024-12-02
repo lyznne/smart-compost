@@ -1,0 +1,21 @@
+Variable, Type, Unit, OptimalRange , Dependencies, IntroductionStage, Frequency , Notes
+Temperature,Numerical,Celsius,45-65,Moisture_Content|Oxygen_Level|Materials_Ratio,Initial,Continuous,"Critical for decomposition, affects microbial activity"
+Moisture_Content,Numerical,Percentage,40-60,Temperature|Material_Type|Particle_Size,Initial,Daily,"Higher for green materials, lower for browns"
+pH_Level,Numerical,pH Scale,6.5-8.0,Nitrogen_Content|Temperature|Moisture_Content,Initial,Weekly,"Affects microbial growth, decomposition rate"
+Oxygen_Level,Numerical,Percentage,5-15,Temperature|Moisture_Content|Bulk_Density,Initial,Continuous,Must be maintained through turning or aeration
+Carbon_Nitrogen_Ratio,Numerical,Ratio,25-30:1,Material_Type|Temperature,Initial,At_Addition,"Crucial for proper decomposition, affects smell"
+Nitrogen_Content,Numerical,Percentage,1.5-2.0,Material_Type|Temperature,Initial,At_Addition,Higher in green materials
+Potassium_Content,Numerical,Percentage,0.5-1.5,Material_Type|Moisture_Content,Initial,Monthly,Affects final fertilizer quality
+Phosphorus_Content,Numerical,Percentage,0.3-1.0,Material_Type|pH_Level,Initial,Monthly,Affects final fertilizer quality
+Ambient_Humidity,Numerical,Percentage,40-70,Moisture_Content,Continuous,Continuous,External factor affecting moisture
+Ambient_Temperature,Numerical,Celsius,15-35,Temperature|Moisture_Content,Continuous,Continuous,External factor affecting process
+Waste_Type,Numerical,Millimeters,5-50,Material_Type|Moisture_Content,Initial,At_Addition,Smaller particles decompose faster but need more aeration
+Waste_Height,Numerical,Centimeters,90-150,Bulk_Density|Moisture_Content,Initial,Weekly,Affects heat retention and oxygen flow
+Particle_Size,Numerical,Millimeters,5-50,Material_Type|Moisture_Content,Initial,At_Addition,Smaller particles decompose faster but need more aeration
+Bulk_Density,Numerical,kg/m3,300-650,Particle_Size|Moisture_Content|Material_Type,Initial,Weekly,Affects oxygen flow and decomposition rate
+Final_Volume_ReductionNumerical,Percentage,40-60,All_Above_Variables,Final_Stage,Final,"Indicates process efficiency, completion"
+Odor_Level,Numerical,Scale 1-5,1-2,Oxygen_Level|Moisture_Content|Carbon_Nitrogen_Ratio,Continuous,Daily,Indicator of anaerobic conditions
+Decomposition_Rate,Numerical,Percentage/Day,1-3,Temperature|Moisture_Content|Oxygen_Level,After_Day_7,Weekly,Rate of mass reduction
+Time_Elapsed,Numerical,Days,30-90,All_Above_Variables,Initial,Continuous,Total duration until maturity
+Maturity_Index,Numerical,Scale 1-8,>7,Temperature|Moisture_Content|Time,Final_Stage,Weekly,Indicates completion of composting
+Turning_Frequency,Numerical,Days,3-7,Temperature|Oxygen_Level|Moisture_Content,After_Day_3,Weekly,Based on temperature and oxygen readings

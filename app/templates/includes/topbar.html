@@ -1,0 +1,36 @@
+<div class="topbar">
+    <div class="topbar-center">
+        <!-- logo -->
+        <a href="{{ url_for('main.home' ) }}" class="logo">
+            <img src="{{  url_for('static', filename='assets/logo.svg' ) }}" alt="logo">
+        </a>
+
+        <h6>S M A R T _ C O M P O S T</h6>
+        <div class="right-topbar">
+            <!-- icon placeholders -->
+
+            <div class="topbar-icon">
+                <i class="fa-solid fa-power-off"></i>
+            </div>
+            <div class="topbar-icon">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+
+            <!-- Profile -->
+            <div class="profile">
+                <img src="{{ url_for('static', filename='assets/avatar.png' ) }}" alt="profile" class="profile-img" id="profileImg">
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="profileModal">
+    <div class="modal-content">
+        <img src="https://via.placeholder.com/100" alt="Profile Preview">
+        <h2>John Doe</h2>
+        <p>Email: johndoe@example.com</p>
+        <button class="close-modal" id="closeModal">Close</button>
+    </div>
+</div>
