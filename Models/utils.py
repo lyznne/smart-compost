@@ -1,8 +1,8 @@
 """
 SMART COMPOST - MODEL PROJECT.
 
----  helpers functions
----   scripts/utils.py
+---  helper functions
+---   Models/utils.py
 
 * Author  -  enos muthiani
 * git     -  https://github.com/lyznne
@@ -12,6 +12,8 @@ SMART COMPOST - MODEL PROJECT.
 
                                     Copyright (c) 2024      - enos.vercel.app
 """
+
+# import
 import pandas as pd
 from sqlite3 import connect
 from gc import collect
@@ -20,15 +22,15 @@ from hashlib import sha256
 import os
 
 
-
+# variables
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-# Correctly join paths
+
 dataset_path = os.path.join(root_dir, "data", "smart_compost_dataset101.csv")
 database_path = os.path.join(root_dir, "smart-compost.db")
 
 
-def sqlite_bulk_insert(database_path: str, table: str, df: pd.DataFrame):
+def sqlite_bulk_insert( table: str, df: pd.DataFrame, database_path: str  = database_path):
     """Inserts a Pandas DataFrame into a SQLite database in bulk.
 
     Args:
@@ -40,6 +42,7 @@ def sqlite_bulk_insert(database_path: str, table: str, df: pd.DataFrame):
         conn.execute("PRAGMA journal_mode = OFF;")
         conn.execute("PRAGMA synchronous = OFF;")
         df.to_sql(table, conn, if_exists="append", index=False)
+
 
 
 def Save_dataset_to_db(
@@ -80,7 +83,8 @@ def Save_dataset_to_db(
         chunk_count += 1
 
 
-def calculate_dataset_hash(dataset_path: str, delimiter: str = ",", encoding: str = "UTF-8") -> str:
+
+def calculate_dataset_hash(dataset_path: str = dataset_path, delimiter: str = ",", encoding: str = "UTF-8") -> str:
     """
     Calculate a hash for the dataset to determine if it's the same as the one saved in the database.
 
@@ -94,12 +98,13 @@ def calculate_dataset_hash(dataset_path: str, delimiter: str = ",", encoding: st
     """
     hasher = sha256()
     with open(dataset_path, "rb") as file:
-        while chunk := file.read(8192):  # Read in chunks for memory efficiency
+        while chunk := file.read(8192):
             hasher.update(chunk)
     return hasher.hexdigest()
 
 
-def check_table_exists_and_same(database_path: str, tablename: str, dataset_hash: str) -> bool:
+
+def check_table_exists_and_same(database_path: str = database_path, tablename: str, dataset_hash: str) -> bool:
     """
     Check if a table exists in the database and if its hash matches the dataset hash.
 
@@ -127,9 +132,10 @@ def check_table_exists_and_same(database_path: str, tablename: str, dataset_hash
     return False
 
 
+
 def save_dataset_with_incremented_table(
-    dataset_path: str,
-    database_path: str,
+    dataset_path: str = dataset_path,
+    database_path: str = database_path,
     tablename: str,
     delimiter: str = ",",
     encoding: str = "UTF-8",
