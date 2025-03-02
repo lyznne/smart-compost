@@ -63,6 +63,8 @@ local_settings.py
 # Flask stuff:
 instance/
 .webassets-cache
+.flask-venv
+.ruff_cache
 
 # Scrapy stuff:
 .scrapy

@@ -1,36 +1,18 @@
 <div class="topbar">
     <div class="topbar-center">
-        <!-- logo -->
-        <a href="{{ url_for('main.home' ) }}" class="logo">
-            <img src="{{  url_for('static', filename='assets/logo.svg' ) }}" alt="logo">
-        </a>
-
-        <h6>S M A R T _ C O M P O S T</h6>
-        <div class="right-topbar">
-            <!-- icon placeholders -->
-
-            <div class="topbar-icon">
-                <i class="fa-solid fa-power-off"></i>
+        <div class="flex items-center gap-2">
+            <div class="logo">
+                <i class="fas fa-leaf text-green"></i>
             </div>
-            <div class="topbar-icon">
-                <i class="fa-solid fa-bell"></i>
-            </div>
-
-            <!-- Profile -->
-            <div class="profile">
-                <img src="{{ url_for('static', filename='assets/avatar.png' ) }}" alt="profile" class="profile-img" id="profileImg">
-            </div>
-
+            <h1 class="text-xl font-bold tracking-wider">Smart Compost</h1>
         </div>
-    </div>
-</div>
-
-<!-- Modal -->
-<div class="modal" id="profileModal">
-    <div class="modal-content">
-        <img src="https://via.placeholder.com/100" alt="Profile Preview">
-        <h2>John Doe</h2>
-        <p>Email: johndoe@example.com</p>
-        <button class="close-modal" id="closeModal">Close</button>
+        <div class="right-topbar">
+            <div class="topbar-icon">
+                <i class="fas fa-cog text-gray-300"></i>
+            </div>
+            <div class="profile-img">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80" alt="Profile">
+            </div>
+        </div>
     </div>
 </div>

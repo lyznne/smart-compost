@@ -12,7 +12,6 @@ SMART COMPOST - MODEL PROJECT.
 
 
 # Import required modules
-from livereload import Server
 from app import create_app
 from app.config import  DevelopmentConfig
 
@@ -24,12 +23,6 @@ app = create_app(DevelopmentConfig)
 
 # Driver code
 if __name__ == "__main__":
-    # Initialize livereload server
-    server = Server(app.wsgi_app)
-
-    server.watch("./app/templates/*.html")  # Watch HTML templates
-    server.watch("./app/static/css/*.css")  # Watch CSS files
-    server.watch("./app/static/js/*.js")  # Watch JavaScript files
 
     # Serve the app
-    server.serve(port=5000, host="0.0.0.0", debug=True)
+    app.run(port=5000, host="0.0.0.0", debug=True)

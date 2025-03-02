@@ -21,11 +21,13 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from .config  import DevelopmentConfig
 
 
 from .util import gen_token, setup_logging
 
 from dotenv import load_dotenv
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -54,8 +56,9 @@ def register_blueprints(app):
     """
     Dynamically register Flask blueprints.
     """
-    from app.views import blueprint
+    from app.views import blueprint,  auth_blueprint
     app.register_blueprint(blueprint, url_prefix="/")
+    app.register_blueprint(auth_blueprint, url_prefix="/auth/")
     # for module_name in ("views",):
     #     module = import_module(f"app.{module_name}")
     #     app.register_blueprint(module.blueprint)
@@ -93,7 +96,7 @@ def load_user(user_id):
     return Users.query.get(user_id)
 
 
-def create_app(config_name):
+def create_app(config_name=DevelopmentConfig):
     """
     Application factory for creating a Flask app instance.
     """

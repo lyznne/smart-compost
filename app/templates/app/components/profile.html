@@ -1,0 +1,110 @@
+<div class="space-y-6">
+    <h2 class="section-title">User Profile</h2>
+
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-image-container">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" alt="Profile" class="profile-image">
+                <button class="change-photo-btn">Change Photo</button>
+            </div>
+
+            <div class="profile-form">
+                <div class="profile-form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" value="Enos Muthiani">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" value="emuthiani26@gmail.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Device Name</label>
+                        <input type="text" class="form-input" value="Smart Compost #A2B7">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-input" value="Backyard Garden">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notification Preferences</label>
+                    <div class="notification-prefs">
+                        <div class="notification-option">
+                            <input type="checkbox" id="temp-alerts" checked>
+                            <label for="temp-alerts">Temperature Alerts</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="moisture-alerts" checked>
+                            <label for="moisture-alerts">Moisture Alerts</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="weekly-reports" checked>
+                            <label for="weekly-reports">Weekly Reports</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="compost-ready" checked>
+                            <label for="compost-ready">Compost Ready Notification</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary">Save Changes</button>
+                    <button class="btn btn-secondary">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="account-card">
+        <h3 class="card-title">Account Settings</h3>
+
+        <div class="account-settings">
+            <div class="password-section">
+                <label class="form-label">Change Password</label>
+                <div class="password-inputs">
+                    <input type="password" class="form-input" placeholder="Current Password">
+                    <input type="password" class="form-input" placeholder="New Password">
+                    <input type="password" class="form-input" placeholder="Confirm New Password">
+                </div>
+                <button class="btn btn-sm btn-primary">Update Password</button>
+            </div>
+
+            <div class="devices-section">
+                <h4 class="section-subtitle">Connected Devices</h4>
+                <div class="devices-list">
+                    <div class="device-item">
+                        <div>
+                            <p class="device-name">Smart Compost #A2B7</p>
+                            <p class="device-last-active">Last active: Now</p>
+                        </div>
+                        <div class="device-status">
+                            <span class="status-dot active"></span>
+                            <span class="status-text">Active</span>
+                        </div>
+                    </div>
+                    <div class="device-item">
+                        <div>
+                            <p class="device-name">Mobile App - iPhone</p>
+                            <p class="device-last-active">Last active: 2 hours ago</p>
+                        </div>
+                        <div class="device-status">
+                            <span class="status-dot active"></span>
+                            <span class="status-text">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="danger-section">
+                <h4 class="danger-title">Danger Zone</h4>
+                <button class="btn btn-danger">Delete Account</button>
+            </div>
+        </div>
+    </div>
+</div>

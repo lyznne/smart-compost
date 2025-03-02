@@ -22,7 +22,9 @@ from app.util import verify_pass
 from flask import request
 
 # Define the blueprint for routes
-blueprint = Blueprint("main", __name__)
+blueprint = Blueprint("app", __name__)
+auth_blueprint = Blueprint("auth", __name__)
+
 
 
 # Home route
@@ -33,11 +35,39 @@ def home():
     Home route (requires login).
     """
 
-    return render_template("app/index.html", user=current_user)
+    return render_template("app/index.html", user=current_user, active_tab='home')
+
+# Wifi
+@blueprint.route("/wifi", methods=["GET", "POST"])
+@login_required
+def wifi():
+    """
+    WIFI Route ...
+    """
+    return render_template("app/index.html", user=current_user, active_tab='wifi')
+
+# STATS
+@blueprint.route("/stats", methods=["GET", "POST"])
+@login_required
+def stats():
+    """
+    STATS route ....
+    """
+    return render_template("app/index.html", user=current_user, active_tab='stats')
+
+
+# PROFILE
+@blueprint.route("/profile", methods=["GET", "POST"]) # url should be `profile/{username}`
+@login_required
+def profile():
+    """
+    User Profile  ...
+    """
+    return render_template("app/index.html", user=current_user, active_tab='profile')
 
 
 # Login route
-@blueprint.route("/signin", methods=["GET", "POST"])
+@auth_blueprint.route("/signin", methods=["GET", "POST"])
 def signin():
     """Handle user signin"""
 
@@ -64,7 +94,7 @@ def signin():
 
                 login_user(user, remember=remember)
                 flash("Welcome back!", "success")
-                return redirect(url_for(".home"))
+                return redirect(url_for("app.home"))
             except Exception as e:
                 print("Error in login_user:", e)
         else:
@@ -76,7 +106,7 @@ def signin():
 
 
 # Forgot password route
-@blueprint.route("/forgot-password", methods=["GET"])
+@auth_blueprint.route("/forgot-password", methods=["GET"])
 def forgot_password():
     """
     Render the forgot password page.
@@ -85,12 +115,12 @@ def forgot_password():
 
 
 # Logout user
-@blueprint.route("/signout")
+@auth_blueprint.route("/signout")
 @login_required
 def signout():
     logout_user()
     flash("You have been logged out", "info")
-    return redirect(url_for(".signin"))
+    return redirect(url_for("auth.signin"))
 
 
 # Single unauthorized handler for Flask-Login
@@ -100,4 +130,4 @@ def unauthorized_handler():
     Redirect unauthorized users to the login page.
     """
     flash("You must be logged in to access this page.", "warning")
-    return redirect(url_for("main.signin"))
+    return redirect(url_for("auth.signin"))

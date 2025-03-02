@@ -1,46 +1,46 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %}
-Home
-{% endblock %}
-
-
-{% block stylesheets %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css' ) }}">
-{% endblock %}
+{% block title %}Smart Compost - Dashboard{% endblock %}
 
 {% block content %}
-<div class="home-body">
-{% include 'includes/navbar.html' %}
-    <!-- home dashboard  -->
-    <section id="home">
-
-        <div class="home-container">
-            <div class="center">
-                {% include 'app/components/home.html' %}
-            </div>
-
-
+<div class="flex p-4 gap-4">
+    <!-- Side Navigation -->
+    <nav class="side-nav">
+        <div class="nav-buttons">
+            <a href="{{ url_for('app.home') }}" class="nav-button {% if active_tab == 'home' %}active{% endif %}">
+                <i class="fas fa-home"></i>
+            </a>
+            <a href="{{ url_for('app.wifi') }}" class="nav-button {% if active_tab == 'wifi' %}active{% endif %}">
+                <i class="fas fa-wifi"></i>
+            </a>
+            <a href="{{ url_for('app.stats') }}" class="nav-button {% if active_tab == 'wifi' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+            </a>
+            <a href="{{ url_for('app.profile') }}" class="nav-button {% if active_tab == 'profile' %}active{% endif %}">
+                <i class="fas fa-user"></i>
+            </a>
         </div>
-    </section>
+        <div class="logout-button">
+            <a href="#" class="nav-button">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </nav>
 
-    <!-- wifi section  -->
-    <section id="wifi"></section>
-
-    <!-- stats & docs  -->
-    <section id="stats"></section>
-
-    <!-- settings  -->
-    <section id="settings"></section>
-
-    <!-- footer  -->
-    {% include 'includes/footer.html' %}
-
-
-
+    <!-- Main Content -->
+    <main class="main-content">
+        {% if active_tab == 'home' %}
+            {% include 'app/components/home.html' %}
+        {% elif active_tab == 'wifi' %}
+            {% include 'app/components/wifi.html' %}
+        {% elif active_tab == 'stats' %}
+            {% include 'app/components/stats.html' %}
+        {% elif active_tab == 'profile' %}
+            {% include 'app/components/profile.html' %}
+        {% endif %}
+    </main>
 </div>
 
-{% endblock %}
-{% block javascripts %}
-
+<!-- Footer -->
+{% include 'includes/footer.html' %}
 {% endblock %}

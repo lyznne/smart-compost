@@ -1,6 +1,5 @@
 #signin {
     height: 100%;
-    /* text-align: center; */
 }
 
 .container {
@@ -10,24 +9,18 @@
     justify-content: center;
 }
 
-
 .form-container {
     border: 2px solid transparent;
     padding: var(--padd-lg) var(--padd-md);
-
-
     display: flex;
     align-items: center;
     justify-content: space-around;
     flex-direction: column;
     gap: var(--padd-xl);
-
-
     max-height: 400px;
     min-height: 380px;
     width: 400px;
     max-width: 480px;
-
     background: linear-gradient(#01173f, #001530) padding-box,
         linear-gradient(145deg, transparent 35%, #30b852, #f9b17a) border-box;
     box-sizing: border-box;
@@ -35,7 +28,6 @@
     background-size: 200% 100%;
     animation: gradient 5s ease infinite;
     text-align: center;
-
 }
 
 .container .header {
@@ -53,7 +45,6 @@
 
 .container .header .header-text p {
     font-size: 15px;
-    /* color: var(--accent-light-c); */
     color: var(--green);
     letter-spacing: .8px;
 }
@@ -61,10 +52,7 @@
 .container .form-card {
     width: 96%;
     padding: var(--padd-sm);
-
 }
-
-
 
 .container .form-card .form-submit-btn {
     position: relative;
@@ -78,12 +66,8 @@
     background: radial-gradient(ellipse at bottom,
             rgba(48, 184, 82, 0.623) 0%,
             rgba(26, 29, 96, 0.2) 45%);
-
     box-shadow: inset 0 0 0 1px rgba(48, 184, 82, 0.1);
-
-
     color: var(--lavender);
-
     transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
     margin: var(--padd-md) 0;
 }
@@ -91,20 +75,15 @@
 .container .form-card .form-submit-btn::before {
     content: "";
     height: 1px;
-
     position: absolute;
     bottom: 0;
     left: 15%;
-
     background: rgba(26, 29, 96, 0.2);
     background: linear-gradient(90deg,
             rgba(255, 255, 255, 0) 0%,
             rgba(48, 184, 82, 0.781) 50%,
             rgba(255, 255, 255, 0) 100%);
-
-
     transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
-
 }
 
 .form-card form {
@@ -150,20 +129,16 @@
     justify-content: space-between;
 }
 
-
 .forgot-password {
     font-size: 14px;
     color: var(--green);
     text-decoration: none;
     text-transform: lowercase;
-
 }
 
 .forgot-password:hover {
     text-decoration: underline;
 }
-
-
 
 .checkbox-container input {
     position: absolute;
@@ -244,27 +219,13 @@
     }
 }
 
-
-
-
-
-
 /* ===== responsive design ==== */
 /* ===== +  small devices + =====  */
 @media only screen and (max-width: 540px) {
     .form-container {
         max-height: 450px;
-
     }
 }
-
-/* ===== +  medium devices + =====  */
-
-@media only screen and (min-width: 768px) and (max-width: 998px) {}
-
-
-
-
 
 @keyframes gradient {
     0% {
@@ -278,4 +239,8 @@
     100% {
         background-position: 0% 50%;
     }
+}
+
+.mt-4 {
+    margin-top: 1rem;
 }

@@ -1,12 +1,9 @@
 {% extends 'layouts/base-fullscreen.html' %}
 
-{% block title %}
-Sign in
-{% endblock %}
-
+{% block title %}Sign in{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/signin.css' ) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/signin.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -23,51 +20,37 @@ Sign in
 
             <!-- end header  -->
 
-
             <div class="form-card">
-                <form action="{{ url_for('main.signin') }}" method="post" class="form">
-                    <!-- @crsf -->
+                <form action="{{ url_for('auth.signin') }}" method="post" class="form">
                     <div class="form-group">
                         <label for="email">
                             <i class="fas fa-envelope"></i>
                         </label>
-                        <input name="email" autocomplete="off" id="email" type="email" placeholder=" email address ..."
-                            required>
+                        <input name="email" autocomplete="off" id="email" type="email" placeholder=" email address ..." required>
                     </div>
 
-
                     <div class="form-group">
-                        <input required autocomplete="off" name="password" id="password" type="password"
-                            placeholder="passcode ...">
+                        <input required autocomplete="off" name="password" id="password" type="password" placeholder="passcode ...">
                         <label for="password">
                             <i class="fas fa-lock"></i>
                         </label>
-
                     </div>
 
-
-                    <div class=" form-options">
+                    <div class="form-options">
                         <label class="checkbox-container">
                             <input name="remember" type="checkbox">
                             <div class="checkmark"></div>
                             remember me
                         </label>
-                        <a href="{{ url_for('main.forgot_password') }}" class="forgot-password">Forgot Password?</a>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
                     </div>
 
                     <button type="submit" class="form-submit-btn">sign In</button>
                 </form>
-
             </div>
-
-
         </div>
     </div>
     <!-- footer  -->
     {% include 'includes/footer.html' %}
 </div>
-
-{% endblock %}
-{% block javascripts %}
-
 {% endblock %}
