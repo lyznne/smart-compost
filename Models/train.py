@@ -119,3 +119,55 @@ class CompostModelTrainer:
         plt.legend()
         plt.grid(True)
         plt.show()
+
+
+# def train_model(model_name, hyperparameters):
+#     """Train a model and log results to Comet ML and MySQL."""
+
+#     # Create a new Comet ML experiment
+#     experiment = Experiment(
+#         api_key=COMET_API_KEY,
+#         project_name=COMET_PROJECT_NAME,
+#         workspace=COMET_WORKSPACE
+#     )
+
+#     # Start tracking in MySQL
+#     training_run = TrainingRun(
+#         model_name=model_name,
+#         experiment_id=experiment.get_key(),
+#         parameters=json.dumps(hyperparameters),
+#         status="running"
+#     )
+#     db.session.add(training_run)
+#     db.session.commit()
+
+#     try:
+#         # Simulate training (Replace with actual ML model training)
+#         for epoch in range(1, 6):
+#             loss = 0.05 * (6 - epoch)  # Simulated loss
+#             accuracy = 0.80 + (0.05 * epoch)  # Simulated accuracy
+
+#             # Log metrics
+#             experiment.log_metric("loss", loss, step=epoch)
+#             experiment.log_metric("accuracy", accuracy, step=epoch)
+
+#             print(f"Epoch {epoch}: Loss={loss:.4f}, Accuracy={accuracy:.4f}")
+#             time.sleep(1)  # Simulate training time
+
+#         # Mark training as complete
+#         training_run.status = "completed"
+#         training_run.metrics = json.dumps({"loss": loss, "accuracy": accuracy})
+#         training_run.end_time = datetime.utcnow()
+#         db.session.commit()
+
+#     except Exception as e:
+#         # Log failure
+#         training_run.status = "failed"
+#         db.session.commit()
+#         print(f"Training failed: {e}")
+
+#     finally:
+#         # End Comet experiment
+#         experiment.end()
+
+#     return training_run

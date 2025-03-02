@@ -13,25 +13,32 @@ SMART COMPOST - MODEL PROJECT.
 """
 
 # import dependencies
-
-# Import dependencies
-from flask_login import UserMixin
 from datetime import datetime
-from app import db, login_manager
-from app.util import hash_pass
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash,check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+
+
+db = SQLAlchemy()
+login_manager = LoginManager()
 
 
 class Users(db.Model, UserMixin):
-    __tablename__ = "Users"
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(64), unique=True, index=True)
+    first_name = db.Column(db.String(64), index=True)
     last_name = db.Column(db.String(64), index=True)
     email = db.Column(db.String(120), unique=True, index=True)
-    password_hash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(255))
+    avatar = db.Column(db.String(255), default="avatar.png")
+    location = db.Column(db.String(255))  # User's location
+    ip_address = db.Column(db.String(45))  # Last known IP address
+    phone = db.Column(db.String(20), nullable=True)
+    last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
@@ -58,6 +65,171 @@ class Users(db.Model, UserMixin):
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def update_last_login(self):
+        """Update the last login time."""
+        self.last_login = datetime.utcnow()
+        db.session.commit()
+
+
+
+class ActivityLog(db.Model):
+    __tablename__ = "activity_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    activity_type = db.Column(db.String(128), nullable=False)  # e.g., "Login", "Settings Change"
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(45))  # IP address of activity
+    user_agent = db.Column(db.String(255))  # Browser/Device info
+
+    user = db.relationship("Users", backref=db.backref("activities", lazy="dynamic"))
+
+    def __repr__(self):
+        return f"<Activity {self.activity_type} by User {self.user_id}>"
+
+class Device(db.Model):
+    """Represents user devices for tracking logins & notifications."""
+
+    __tablename__ = "devices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    device_name = db.Column(db.String(128), nullable=False)  # Parsed from User-Agent
+    device_ip = db.Column(db.String(45), nullable=False)  # IPv4/IPv6 support
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    push_token = db.Column(db.String(255), nullable=True)  # FCM push token
+    device_type = db.Column(db.String(20), nullable=True)  # Mobile, Tablet, PC
+    browser = db.Column(db.String(100), nullable=True)
+    os = db.Column(db.String(100), nullable=True)
+    location_city = db.Column(db.String(100), nullable=True)
+    location_region = db.Column(db.String(100), nullable=True)
+    location_country = db.Column(db.String(50), nullable=True)
+
+    user = db.relationship("Users", backref=db.backref("devices", lazy="dynamic"))
+
+    def __repr__(self):
+        return f"<Device {self.device_name} - {self.device_ip}>"
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    message = db.Column(db.String(255), nullable=False)
+    channel = db.Column(db.String(20), default="web")  # web, email, push, sms
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    read_status = db.Column(db.Boolean, default=False)
+    delivery_status = db.Column(db.String(20), default="pending")   # False = unread, True = read
+
+    user = db.relationship("Users", backref=db.backref("notifications", lazy="dynamic"))
+
+    def __repr__(self):
+        return f"<Notification {self.message} for User {self.user_id}>"
+
+class TrainingRun(db.Model):
+    __tablename__ = "training_runs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    model_name = db.Column(db.String(128), nullable=False)
+    experiment_id = db.Column(db.String(128), unique=True, nullable=False)
+    parameters = db.Column(db.JSON)  # Hyperparameters as JSON
+    metrics = db.Column(db.JSON)  # Loss, accuracy, etc.
+    status = db.Column(db.String(20), default="running")  # ["running", "completed", "failed"]
+    start_time = db.Column(db.DateTime, default=datetime.utcnow)
+    end_time = db.Column(db.DateTime, nullable=True)
+
+    def __repr__(self):
+        return f"<TrainingRun {self.model_name} - {self.experiment_id}>"
+
+
+class EnvironmentalVariable(db.Model):
+    __tablename__ = "environmental_variables"
+
+    id = db.Column(db.Integer, primary_key=True)  # Unique identifier
+    variable = db.Column(db.String(100), unique=True, nullable=False)  # Name of variable
+    variable_type = db.Column(db.String(50), nullable=False)  # Numerical/Categorical
+    measurement_unit = db.Column(db.String(50), nullable=False)  # Unit of measurement
+    optimal_range = db.Column(db.String(50), nullable=False)  # Optimal range value
+    dependencies = db.Column(db.Text, nullable=True)  # Dependencies (comma-separated)
+    introduction_stage = db.Column(db.String(50), nullable=False)  # Initial, Continuous, etc.
+    frequency = db.Column(db.String(50), nullable=False)  # Frequency of measurement
+    notes = db.Column(db.Text, nullable=True)  # Additional details
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<EnvironmentalVariable {self.variable}>"
+
+
+class CompostUserPreferences(db.Model):
+    __tablename__ = "compost_user_preferences"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    compost_experience = db.Column(db.String(20))  # novice, intermediate, expert
+    preferred_materials = db.Column(db.String(255))  # comma-separated list
+    garden_size = db.Column(db.String(20))  # small, medium, large
+    notification_frequency = db.Column(db.String(20), default="daily")  # daily, weekly, real-time
+    data_sharing_consent = db.Column(db.Boolean, default=False)
+    prediction_alerts = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship("Users", backref=db.backref("compost_preferences", uselist=False))
+
+    def __repr__(self):
+        return f"<CompostPreferences for User {self.user_id}>"
+
+
+def seed_environmental_data():
+    """Seed the database with initial environmental variables."""
+
+    data = [
+        ("Temperature", "Numerical", "Celsius", "45-65", "Moisture_Content|Oxygen_Level|Materials_Ratio", "Initial", "Continuous", "Critical for decomposition, affects microbial activity"),
+        ("Moisture_Content", "Numerical", "Percentage", "40-60", "Temperature|Material_Type|Particle_Size", "Initial", "Daily", "Higher for green materials, lower for browns"),
+        ("pH_Level", "Numerical", "pH Scale", "6.5-8.0", "Nitrogen_Content|Temperature|Moisture_Content", "Initial", "Weekly", "Affects microbial growth, decomposition rate"),
+        ("Oxygen_Level", "Numerical", "Percentage", "5-15", "Temperature|Moisture_Content|Bulk_Density", "Initial", "Continuous", "Must be maintained through turning or aeration"),
+        ("Carbon_Nitrogen_Ratio", "Numerical", "Ratio", "25-30:1", "Material_Type|Temperature", "Initial", "At_Addition", "Crucial for proper decomposition, affects smell"),
+        ("Nitrogen_Content", "Numerical", "Percentage", "1.5-2.0", "Material_Type|Temperature", "Initial", "At_Addition", "Higher in green materials"),
+        ("Potassium_Content", "Numerical", "Percentage", "0.5-1.5", "Material_Type|Moisture_Content", "Initial", "Monthly", "Affects final fertilizer quality"),
+        ("Phosphorus_Content", "Numerical", "Percentage", "0.3-1.0", "Material_Type|pH_Level", "Initial", "Monthly", "Affects final fertilizer quality"),
+        ("Ambient_Humidity", "Numerical", "Percentage", "40-70", "Moisture_Content", "Continuous", "Continuous", "External factor affecting moisture"),
+        ("Ambient_Temperature", "Numerical", "Celsius", "15-35", "Temperature|Moisture_Content", "Continuous", "Continuous", "External factor affecting process"),
+        ("Waste_Type", "Numerical", "Millimeters", "5-50", "Material_Type|Moisture_Content", "Initial", "At_Addition", "Smaller particles decompose faster but need more aeration"),
+        ("Waste_Height", "Numerical", "Centimeters", "90-150", "Bulk_Density|Moisture_Content", "Initial", "Weekly", "Affects heat retention and oxygen flow"),
+        ("Particle_Size", "Numerical", "Millimeters", "5-50", "Material_Type|Moisture_Content", "Initial", "At_Addition", "Smaller particles decompose faster but need more aeration"),
+        ("Bulk_Density", "Numerical", "kg/m3", "300-650", "Particle_Size|Moisture_Content|Material_Type", "Initial", "Weekly", "Affects oxygen flow and decomposition rate"),
+        ("Final_Volume_Reduction", "Numerical", "Percentage", "40-60", "All_Above_Variables", "Final_Stage", "Final", "Indicates process efficiency, completion"),
+        ("Odor_Level", "Numerical", "Scale 1-5", "1-2", "Oxygen_Level|Moisture_Content|Carbon_Nitrogen_Ratio", "Continuous", "Daily", "Indicator of anaerobic conditions"),
+        ("Decomposition_Rate", "Numerical", "Percentage/Day", "1-3", "Temperature|Moisture_Content|Oxygen_Level", "After_Day_7", "Weekly", "Rate of mass reduction"),
+        ("Time_Elapsed", "Numerical", "Days", "30-90", "All_Above_Variables", "Initial", "Continuous", "Total duration until maturity"),
+        ("Maturity_Index", "Numerical", "Scale 1-8", ">7", "Temperature|Moisture_Content|Time", "Final_Stage", "Weekly", "Indicates completion of composting"),
+        ("Turning_Frequency", "Numerical", "Days", "3-7", "Temperature|Oxygen_Level|Moisture_Content", "After_Day_3", "Weekly", "Based on temperature and oxygen readings"),
+    ]
+
+    for item in data:
+        variable = EnvironmentalVariable(
+            variable=item[0],
+            variable_type=item[1],
+            measurement_unit=item[2],
+            optimal_range=item[3],
+            dependencies=item[4],
+            introduction_stage=item[5],
+            frequency=item[6],
+            notes=item[7],
+            created_at=datetime.now(),
+        )
+        print(f"✅ Adding: {variable}")
+        db.session.add(variable)
+
+    try:
+        db.session.commit()
+        print("✅ Environmental variables added successfully.")
+    except Exception as e:
+        db.session.rollback()  # Prevent database corruption
+        print(f"❌ Error committing data: {e}")
+
 
 
 def create_sample_user():

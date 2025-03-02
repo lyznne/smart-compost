@@ -12,7 +12,7 @@ SMART COMPOST - MODEL PROJECT.
 
 
 # Import required modules
-from app import create_app
+from app import create_app, socketio
 from app.config import  DevelopmentConfig
 
 # ---
@@ -24,5 +24,5 @@ app = create_app(DevelopmentConfig)
 # Driver code
 if __name__ == "__main__":
 
-    # Serve the app
-    app.run(port=5000, host="0.0.0.0", debug=True)
+    # Serve the app with websockets
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

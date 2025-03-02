@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@200..800&display=swap');
+
+.auth-error-container {
+    text-align: center;
+    padding: var(--padd-xl);
+    color: var(--primary-color);
+    font-family: 'Oxanium', sans-serif;
+}
+
+.error-title {
+    font-size: 5rem;
+    font-weight: 700;
+    text-shadow: 0 0 20px var(--error);
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: glow 1s infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px rgba(144, 94, 38, 1);
+    }
+
+    to {
+        text-shadow: 0 0 20px rgba(245, 236, 155, 1);
+    }
+}
+
+.error-message {
+    font-size: 1.5rem;
+    color: var(--accent-light-b);
+}
+
+.btn-home {
+    margin-top: var(--padd-lg);
+    padding: var(--padd-md) var(--padd-lg);
+    background: var(--info);
+    border-radius: var(--rounded);
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: 0.3s;
+}
+
+.btn-home:hover {
+    background: var(--error);
+}

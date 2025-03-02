@@ -38,11 +38,19 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "your_email@example.com")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "your_password")
     SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME")
+    SESSION_COOKIE_SECURE =  os.getenv("SESSION_COOKIE_SECURE", True)
+    SESSION_COOKIE_SAMESITE =  os.getenv("SESSION_COOKIE_SAMESITE", 'Lax')
+    
 
     # Correct SQLAlchemy Database URI
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "SQLALCHEMY_DATABASE_URI",
-        f"sqlite:///{os.path.join(basedir, 'smart-compost.db')}",
+    # SQLALCHEMY_DATABASE_URI = os.environ.get(
+    #     "SQLALCHEMY_DATABASE_URI",
+    #     f"sqlite:///{os.path.join(basedir, 'smart-compost.db')}",
+    # )
+    # MYSql database
+    SQLALCHEMY_DATABASE_URI = (
+    f"mysql+mysqlconnector://{os.getenv('DATABASE_USER')}:{os.getenv('DATABASE_PASSWORD')}"
+    f"@{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
@@ -65,6 +73,13 @@ class ProductionConfig(Config):
     #     config("DB_PORT", default=5432),
     #     config("DB_NAME", default="appseed-flask"),
     # )
+
+    # MYSql database
+    SQLALCHEMY_DATABASE_URI = (
+        f"mysql+mysqlconnector://{os.getenv('DATABASE_USER')}:{os.getenv('DATABASE_PASSWORD')}"
+        f"@{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}"
+    )
+
 
 
 # Configuration dictionary

@@ -9,7 +9,7 @@
 {% block content %}
 <div class="signin-body" id="signin">
     <div class="container">
-        <div class="form-container">
+        <div class="form-container form-container-signup">
             <!-- header  -->
             <div class="header">
                 <div class="header-text">
@@ -21,16 +21,33 @@
             <!-- end header  -->
 
             <div class="form-card">
-                <form action="{{ url_for('auth.signin') }}" method="post" class="form">
+                <form action="{{ url_for('auth.signup') }}" method="post" class="form">
+                    <div class="d-flex row">
+                        <div class="form-group">
+                            <label for="first_name">
+                                <i class="fas fa-user"></i>
+                            </label>
+                            <input name="first_name" autocomplete="off" id="first_name" type="text" placeholder="last name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last_name">
+                                <i class="fas fa-user"></i>
+                            </label>
+                            <input name="last_name" autocomplete="off" id="last_name" type="text" placeholder="last name" required>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="email">
                             <i class="fas fa-envelope"></i>
                         </label>
-                        <input name="email" autocomplete="off" id="email" type="email" placeholder=" email address ..." required>
+                        <input name="email" autocomplete="off" id="email" type="email" placeholder=" email address ..."
+                            required>
                     </div>
 
                     <div class="form-group">
-                        <input required autocomplete="off" name="password" id="password" type="password" placeholder="passcode ...">
+                        <input required autocomplete="off" name="password" id="password" type="password"
+                            placeholder="passcode ...">
                         <label for="password">
                             <i class="fas fa-lock"></i>
                         </label>
@@ -40,21 +57,18 @@
                         <label class="checkbox-container">
                             <input name="remember" type="checkbox">
                             <div class="checkmark"></div>
-                            remember me
+                            Agree to policy & agreements
                         </label>
-                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">SignIn?</a>
                     </div>
 
                     <button type="submit" class="form-submit-btn">sign In</button>
                 </form>
-                <p class="form-card-footer">Connect to <a href="{{ url_for('auth.signup') }}">smart compost</a></p>
+                <p>Access Panel <a href="{{ url_for('auth.signin') }}">smart compost</a></p>
+
             </div>
-
-
         </div>
-
     </div>
-
     <!-- footer  -->
     {% include 'includes/footer.html' %}
 </div>

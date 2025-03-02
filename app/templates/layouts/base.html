@@ -30,10 +30,23 @@ SMART COMPOST - MODEL PROJECT.
                         {% include 'includes/flash-messages.html' %}
                         {% block content %}{% endblock %}
 
-
-
                 </div>
                 <!-- Specific JS goes HERE -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+                <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                                const socket = io.connect("http://localhost:5000/notifications");
+
+                                socket.on("new_notification", function (data) {
+                                        if (data.user_id === {{ current_user.id }
+                                }) {
+                                        alert("New Notification: " + data.message);
+                                }
+                        });
+                    });
+                </script>
+
+
                 {% block javascripts %}{% endblock %}
         </body>
 

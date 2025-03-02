@@ -43,11 +43,15 @@
     -webkit-font-smoothing: antialiasded !important;
 }
 
+* {
+    /* border: 1px solid rgba(220, 20, 60, 0.562); */
+}
 body {
     font-family: 'Raleway', sans-serif;
     scroll-behavior: smooth;
     overflow-x: hidden;
     color: var(--accent-light-a);
+    height: 100dvh;
 }
 
 .body {
@@ -522,7 +526,16 @@ footer {
     color: #9ca3af;
     margin-bottom: 0.25rem;
 }
-
+.d-flex  {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.row {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: var(--padd-sm);
+}
 .form-input {
     width: 100%;
     background-color: #001a3a;

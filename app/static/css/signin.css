@@ -17,10 +17,10 @@
     justify-content: space-around;
     flex-direction: column;
     gap: var(--padd-xl);
-    max-height: 400px;
-    min-height: 380px;
-    width: 400px;
-    max-width: 480px;
+    max-height: 460px;
+    min-height: 390px;
+    width: 480px;
+    max-width: 500px;
     background: linear-gradient(#01173f, #001530) padding-box,
         linear-gradient(145deg, transparent 35%, #30b852, #f9b17a) border-box;
     box-sizing: border-box;
@@ -29,24 +29,34 @@
     animation: gradient 5s ease infinite;
     text-align: center;
 }
-
+.form-container-signup {
+    max-height: 540px;
+    min-height: 420px;
+    max-width: 510px;
+}
 .container .header {
     width: 100%;
     margin-bottom: var(--padd-md);
 }
 
 .container .header .header-text h1 {
-    font-size: 22px;
-    line-height: 32px;
+    font-size: 26px;
+    line-height: 42px;
     color: var(--lavender);
     margin-bottom: var(--padd-sm);
-    letter-spacing: .5px;
+    letter-spacing: 1px;
 }
 
 .container .header .header-text p {
     font-size: 15px;
     color: var(--green);
     letter-spacing: .8px;
+    margin-top: 4px;
+}
+
+.container .header .header-text i {
+    color: var(--green) ;
+    margin-left: 2px ;
 }
 
 .container .form-card {
@@ -110,19 +120,22 @@
 
 .form-card .form-group input {
     width: 100%;
-    padding: .65rem var(--padd-lg);
+    padding: 1rem var(--padd-lg);
     border: 0;
     border-radius: 5px;
-    font-size: 17px;
+    font-size: 1.2em;
     color: var(--lavender);
     box-shadow: inset 0 0 0 1px rgba(48, 184, 82, 0.1);
     background: rgba(255, 255, 255, 0.009);
 }
 
-.form-card .form-group input:focus {
-    border: 1px solid inset 0 0 0 1px rgba(48, 184, 82, 0.3);
+.form-card .form-group input:focus,
+.form-card .form-group input:hover,
+.form-card .form-group input:not(:placeholder-shown) {
+    border: 1px solid rgba(48, 184, 82, 0.7);
+    box-shadow: 0 0 5px rgba(48, 184, 82, 0.5);
+    transition: border 0.3s ease, box-shadow 0.3s ease;
 }
-
 .form-options {
     display: flex;
     width: 90%;
@@ -169,6 +182,19 @@
     transition: 300ms;
 }
 
+
+.form-card  .form-card-footer {
+    margin-top: var(--padd-lg);
+    font-size: 1em;
+    text-transform: lowercase;
+
+}
+
+.form-card .form-card-footer a {
+    color: var(--green);
+    letter-spacing: 1.2px;
+
+}
 /* When the checkbox is checked, add a blue background */
 .checkbox-container input:checked~.checkmark {
     background-color: var(--green);
