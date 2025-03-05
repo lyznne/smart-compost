@@ -1,62 +1,79 @@
 <div class="space-y-6">
-    <h2 class="section-title">User Profile</h2>
+    {% include 'includes/user-greeting.html' %}
+
 
     <div class="profile-card">
         <div class="profile-header">
             <div class="profile-image-container">
-                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" alt="Profile" class="profile-image">
+                <img src="{{ user.avatar or 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80' }}"
+                    alt="Profile" class="profile-image">
                 <button class="change-photo-btn">Change Photo</button>
             </div>
 
             <div class="profile-form">
-                <div class="profile-form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" class="form-input" value="Enos Muthiani">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input" value="emuthiani26@gmail.com">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Device Name</label>
-                        <input type="text" class="form-input" value="Smart Compost #A2B7">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Location</label>
-                        <input type="text" class="form-input" value="Backyard Garden">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Notification Preferences</label>
-                    <div class="notification-prefs">
-                        <div class="notification-option">
-                            <input type="checkbox" id="temp-alerts" checked>
-                            <label for="temp-alerts">Temperature Alerts</label>
+                <form action="{{ url_for('app.profile') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="profile-form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <div class="flex row">
+                                <input type="text" class="form-input" name="first_name" value="{{ user.first_name   }}">
+                                <input type="text" class="form-input" name="last_name" value="{{ user.last_name   }}">
+                            </div>
                         </div>
-                        <div class="notification-option">
-                            <input type="checkbox" id="moisture-alerts" checked>
-                            <label for="moisture-alerts">Moisture Alerts</label>
+
+                        <div class="form-group">
+                            <label class="form-label">Email and phone number</label>
+                            <div class="flex row">
+                                <input type="email" class="form-input" name="email" value="{{ user.email }}">
+                                <input type="text" class="form-input" name="phone" value="{{ user.phone }}">
+
+                            </div>
                         </div>
-                        <div class="notification-option">
-                            <input type="checkbox" id="weekly-reports" checked>
-                            <label for="weekly-reports">Weekly Reports</label>
+
+                        <div class="form-group">
+                            <label class="form-label">Compost Device Name</label>
+                            <input type="text" class="form-input" value="Smart Compost #A2B7" disabled>
                         </div>
-                        <div class="notification-option">
-                            <input type="checkbox" id="compost-ready" checked>
-                            <label for="compost-ready">Compost Ready Notification</label>
+
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-input" name="location"
+                                value="{{ user.location or primary_device.location_city or 'Unknown' }}">
                         </div>
                     </div>
-                </div>
 
-                <div class="form-actions">
-                    <button class="btn btn-primary">Save Changes</button>
-                    <button class="btn btn-secondary">Reset</button>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Notification Preferences</label>
+                        <div class="notification-prefs">
+                            <div class="notification-option">
+                                <input type="checkbox" id="temp-alerts" name="temp_alerts" {{ 'checked' if
+                                    notification_prefs.temp_alerts else '' }}>
+                                <label for="temp-alerts">Temperature Alerts</label>
+                            </div>
+                            <div class="notification-option">
+                                <input type="checkbox" id="moisture-alerts" name="moisture_alerts" {{ 'checked' if
+                                    notification_prefs.moisture_alerts else '' }}>
+                                <label for="moisture-alerts">Moisture Alerts</label>
+                            </div>
+                            <div class="notification-option">
+                                <input type="checkbox" id="weekly-reports" name="weekly_reports" {{ 'checked' if
+                                    notification_prefs.weekly_reports else '' }}>
+                                <label for="weekly-reports">Weekly Reports</label>
+                            </div>
+                            <div class="notification-option">
+                                <input type="checkbox" id="compost-ready" name="compost_ready" {{ 'checked' if
+                                    notification_prefs.compost_ready else '' }}>
+                                <label for="compost-ready">Compost Ready Notification</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -78,26 +95,19 @@
             <div class="devices-section">
                 <h4 class="section-subtitle">Connected Devices</h4>
                 <div class="devices-list">
+                    {% for device in devices %}
                     <div class="device-item">
                         <div>
-                            <p class="device-name">Smart Compost #A2B7</p>
-                            <p class="device-last-active">Last active: Now</p>
+                            <p class="device-name">{{ device.device_name }} - <span> {{ device.device_type }}</span></p>
+                            <p class="device-last-active">Last active: {{ device.last_seen.strftime('%Y-%m-%d %H:%M:%S')
+                                }}</p>
                         </div>
                         <div class="device-status">
                             <span class="status-dot active"></span>
                             <span class="status-text">Active</span>
                         </div>
                     </div>
-                    <div class="device-item">
-                        <div>
-                            <p class="device-name">Mobile App - iPhone</p>
-                            <p class="device-last-active">Last active: 2 hours ago</p>
-                        </div>
-                        <div class="device-status">
-                            <span class="status-dot active"></span>
-                            <span class="status-text">Active</span>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
 

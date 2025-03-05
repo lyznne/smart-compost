@@ -294,17 +294,69 @@ def stats():
     )
 
 
-# PROFILE
-@blueprint.route(
-    "/profile", methods=["GET", "POST"]
-)  # url should be `profile/{username}`
+@blueprint.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
     """
-    User Profile  ...
+    User Profile Route
     """
-    return render_template("app/index.html", user=current_user, active_tab="profile")
+    # Fetch the current user's data
+    user = Users.query.get(current_user.id)
 
+    # Fetch the user's primary device (most recently used)
+    primary_device = (
+        Device.query.filter_by(user_id=current_user.id)
+        .order_by(Device.last_seen.desc())
+        .first()
+    )
+    notifications = DataService.get_notifications(current_user.id)
+    connected_devices = DataService.get_connected_devices(current_user.id)
+    wifi_connected = DataService.get_wifi_status(current_user.id)
+    current_time = DataService.get_current_time()
+
+    # Fetch notification preferences (example: stored in the Users model)
+    notification_prefs = {
+        "temp_alerts": True,  # Example: Fetch from database
+        "moisture_alerts": True,
+        "weekly_reports": True,
+        "compost_ready": True,
+    }
+
+    # Handle form submission for updating profile
+    if request.method == "POST":
+        # Update user profile data
+        user.first_name = request.form.get("first_name", user.first_name)
+        user.last_name = request.form.get("last_name", user.last_name)
+        user.email = request.form.get("email", user.email)
+        user.phone = request.form.get("phone", user.phone)
+        user.location = request.form.get("location", user.location)
+
+        # Update notification preferences
+        notification_prefs["temp_alerts"] = "temp_alerts" in request.form
+        notification_prefs["moisture_alerts"] = "moisture_alerts" in request.form
+        notification_prefs["weekly_reports"] = "weekly_reports" in request.form
+        notification_prefs["compost_ready"] = "compost_ready" in request.form
+
+        # Save changes to the database
+        db.session.commit()
+
+        
+
+        return redirect(url_for("app.profile"))
+
+    return render_template(
+        "app/index.html",
+        user=user,
+        primary_device=primary_device,
+        devices=Device.query.filter_by(user_id=current_user.id).all(),
+        notification_prefs=notification_prefs,
+        notifications=notifications,
+        connected_devices=connected_devices,
+        wifi_connected=wifi_connected,
+        current_time=current_time,
+        active_tab="profile",
+        device=primary_device,
+    )
 
 # Login route
 @auth_blueprint.route("/signin", methods=["GET", "POST"])

@@ -14,6 +14,7 @@ SMART COMPOST - MODEL PROJECT.
 
 # import dependencies
 from datetime import datetime
+from email.policy import default
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_sqlalchemy import SQLAlchemy
@@ -32,14 +33,18 @@ class Users(db.Model, UserMixin):
     last_name = db.Column(db.String(64), index=True)
     email = db.Column(db.String(120), unique=True, index=True)
     password_hash = db.Column(db.String(255))
-    avatar = db.Column(db.String(255), default="avatar.png")
+    avatar = db.Column(
+        db.String(255),
+        default="'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80",
+    )
     location = db.Column(db.String(255))  # User's location
     ip_address = db.Column(db.String(45))  # Last known IP address
     phone = db.Column(db.String(20), nullable=True)
     last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    is_deleted = db.Column(db.Boolean, default=False) # soft delete
+    
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
             if hasattr(value, "__iter__") and not isinstance(value, str):
@@ -48,7 +53,6 @@ class Users(db.Model, UserMixin):
             if property == "password":
                 self.password = value
                 # self.password = value
-
 
             setattr(self, property, value)
 
@@ -70,7 +74,6 @@ class Users(db.Model, UserMixin):
         """Update the last login time."""
         self.last_login = datetime.utcnow()
         db.session.commit()
-
 
 
 class ActivityLog(db.Model):
@@ -106,7 +109,7 @@ class Device(db.Model):
     location_region = db.Column(db.String(100), nullable=True)
     location_country = db.Column(db.String(50), nullable=True)
     wifi_connected = db.Column(db.Boolean, default=False)
-    
+
     user = db.relationship("Users", backref=db.backref("devices", lazy="dynamic"))
 
     def __repr__(self):
@@ -248,7 +251,6 @@ def seed_environmental_data():
     except Exception as e:
         db.session.rollback()  # Prevent database corruption
         print(f"❌ Error committing data: {e}")
-
 
 
 def create_sample_user():
