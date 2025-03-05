@@ -14,7 +14,7 @@ SMART COMPOST - MODEL PROJECT.
 
 # import dependency
 
-from ast import parse
+from user_agents import parse
 import os
 from datetime import datetime
 import secrets
@@ -23,21 +23,27 @@ from flask import request
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
-from app.models import Device
+from app.models import Device, db
+import sys,subprocess
 
 API_KEY  =  os.getenv('IP_API_TOKEN')
 
 # util function to gen secret key
+import os
+import secrets
+
+
 def gen_token():
     """
     Generate a random secret key and save it to the .env file.
-    If the variable `SECRET_KEY_TOKEN` does not exist, it is added.
+    If the variable `SECRET_KEY_TOKEN` already exists, do not overwrite it.
     """
-    token = secrets.token_hex(32)  # Generate a secure random token
     file_path = ".env"
 
     # Check if .env file exists
     if not os.path.exists(file_path):
+        # Generate a new secret key and write it to the .env file
+        token = secrets.token_hex(32)
         with open(file_path, "w") as file:
             file.write(f"SECRET_KEY_TOKEN={token}\n")
         return
@@ -46,26 +52,23 @@ def gen_token():
     with open(file_path, "r") as file:
         lines = file.readlines()
 
-    # Check if SECRET_KEY_TOKEN exists and update or append it
-    key_found = False
-    with open(file_path, "w") as file:
-        for line in lines:
-            if line.startswith("SECRET_KEY_TOKEN="):
-                file.write(f"SECRET_KEY_TOKEN={token}\n")
-                key_found = True
-            else:
-                file.write(line)
+    # Check if SECRET_KEY_TOKEN already exists
+    key_found = any(line.startswith("SECRET_KEY_TOKEN=") for line in lines)
 
-        if not key_found:
+    # If SECRET_KEY_TOKEN does not exist, generate and append it
+    if not key_found:
+        token = secrets.token_hex(32)
+        with open(file_path, "a") as file:
             file.write(f"SECRET_KEY_TOKEN={token}\n")
 
 
 # my logger
 def setup_logging():
+
     """
     Configure custom logs for the SMART COMPOST project.
     """
-
+    from app import logger
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         return
 
@@ -138,36 +141,42 @@ def import_csv_to_model(csv_file, model_name):
         print(f"❌ Error: {e}")
 
 
-
-def get_client_ip()-> str:
+def get_client_ip(request)-> str:
     """Retrieve the real IP address of the user, handling proxy forwarding.
 
     Returns:
         str: ip address of user (user agent)
     """
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        ip = forwarded_for.split(",")[0]  # Get first IP in the list
+    if request.environ.get("HTTP_X_FORWARDED_FOR"):
+        # Handle proxies
+        ip = request.environ["HTTP_X_FORWARDED_FOR"].split(",")[0]
     else:
-        ip = request.remote_addr
+        ip = request.environ.get("REMOTE_ADDR")
     return ip
 
 
-def get_device_info()->dict:
+def get_device_info(request) -> dict:
     """Extract device details from the User-Agent header.
 
     Returns:
-        dict: device info 1. device name 2. device_type 3. browser 4. os
-
+        dict: device info containing:
+            1. device_name
+            2. device_type
+            3. browser
+            4. os
     """
+    # Get the User-Agent string from the request headers
     user_agent = request.headers.get("User-Agent", "Unknown Device")
+
+    # Parse the User-Agent string
     ua = parse(user_agent)
 
+    # Return device information
     return {
         "device_name": ua.device.family if ua.device.family else "Unknown Device",
         "device_type": "Mobile" if ua.is_mobile else "Tablet" if ua.is_tablet else "PC",
         "browser": f"{ua.browser.family} {ua.browser.version_string}",
-        "os": f"{ua.os.family} {ua.os.version_string}"
+        "os": f"{ua.os.family} {ua.os.version_string}",
     }
 
 
@@ -186,13 +195,12 @@ def get_location_from_ip(ip: str) -> dict:
     except requests.RequestException:
         return {"city": "Unknown", "region": "Unknown", "country": "Unknown"}
 
+
 def register_device(user_id: int, push_token: str = None):
-    from app import db
-
     """Register a new device or update last seen for existing devices."""
-
-    user_ip = get_client_ip()
-    device_info = get_device_info()
+    # Extract necessary data from the request
+    user_ip = get_client_ip(request)
+    device_info = get_device_info(request)
     location_data = get_location_from_ip(user_ip)
 
     # Check if device already exists
@@ -200,12 +208,14 @@ def register_device(user_id: int, push_token: str = None):
 
     if existing_device:
         existing_device.last_seen = datetime.utcnow()
-        existing_device.push_token = push_token or existing_device.push_token  # Update push token if provided
+        existing_device.push_token = (
+            push_token or existing_device.push_token
+        )  # Update push token if provided
     else:
         # Register new device
         new_device = Device(
             user_id=user_id,
-            device_name=f"{device_info['device_name']} - {device_info['browser']} ({device_info['os']})",
+            device_name=device_info["device_name"],
             device_ip=user_ip,
             device_type=device_info["device_type"],
             browser=device_info["browser"],
@@ -213,8 +223,63 @@ def register_device(user_id: int, push_token: str = None):
             location_city=location_data["city"],
             location_region=location_data["region"],
             location_country=location_data["country"],
-            push_token=push_token
+            push_token=push_token,
         )
         db.session.add(new_device)
 
     db.session.commit()
+
+
+def setup_network_permissions():
+    """
+    Safely setup network permissions before starting Flask app
+
+    Returns:
+        bool: True if setup successful, False otherwise
+    """
+    from app import logger
+    
+
+    try:
+        # Determine the full path to the script
+        script_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "services", "rule_manager.py"
+        )
+
+        # Validate script exists
+        if not os.path.exists(script_path):
+            logger.error(f"Network permissions script not found: {script_path}")
+            return False
+
+        # Run the permissions setup script
+        logger.info("Starting network permissions setup")
+
+        result = subprocess.run(
+            ["sudo", "python3", script_path],
+            capture_output=True,
+            text=True,
+            check=True,  # Raise CalledProcessError if command returns non-zero exit code
+        )
+
+        # Log successful output
+        if result.stdout:
+            logger.info(f"Permissions setup stdout: {result.stdout}")
+
+        logger.info("Network permissions setup completed successfully")
+        return True
+
+    except subprocess.CalledProcessError as e:
+        # Handle subprocess execution errors
+        logger.error(f"Network permissions setup failed. Exit code: {e.returncode}")
+        logger.error(f"Error output: {e.stderr}")
+
+        # Optionally, provide more context
+        if "permission denied" in e.stderr.lower():
+            logger.error("Sudo access may be required. Check sudoers configuration.")
+
+        return False
+
+    except Exception as e:
+        # Catch any unexpected errors
+        logger.error(f"Unexpected error during network permissions setup: {e}")
+        return False

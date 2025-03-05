@@ -23,31 +23,22 @@ SMART COMPOST - MODEL PROJECT.
                 {% endblock stylesheets %}
         </head>
 
-        <body>
+        <body data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}">
                 <div class="body">
-
                         {% include 'includes/topbar.html' %}
                         {% include 'includes/flash-messages.html' %}
-                        {% block content %}{% endblock %}
-
+                        {% block content %}
+                        <!-- content here -->
+                        {% endblock %}
                 </div>
-                <!-- Specific JS goes HERE -->
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+                <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+
                 <script>
-                        document.addEventListener("DOMContentLoaded", function () {
-                                const socket = io.connect("http://localhost:5000/notifications");
-
-                                socket.on("new_notification", function (data) {
-                                        if (data.user_id === {{ current_user.id }
-                                }) {
-                                        alert("New Notification: " + data.message);
-                                }
-                        });
-                    });
+                        var csrf_token = "{{ csrf_token() }}";
                 </script>
-
-
                 {% block javascripts %}{% endblock %}
+
         </body>
 
 </html>

@@ -17,23 +17,25 @@
                     <p>Building a sustainable future together!</p>
                 </div>
             </div>
-
             <!-- end header  -->
 
             <div class="form-card">
-                <form action="{{ url_for('auth.signup') }}" method="post" class="form">
+                <form action="{{ url_for('auth.signup') }}" method="POST" class="form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <div class="d-flex row">
                         <div class="form-group">
                             <label for="first_name">
                                 <i class="fas fa-user"></i>
                             </label>
-                            <input name="first_name" autocomplete="off" id="first_name" type="text" placeholder="last name" required>
+                            <input name="first_name" autocomplete="off" id="first_name" type="text"
+                                placeholder="first name" required value="{{ first_name or '' }}">
                         </div>
                         <div class="form-group">
                             <label for="last_name">
                                 <i class="fas fa-user"></i>
                             </label>
-                            <input name="last_name" autocomplete="off" id="last_name" type="text" placeholder="last name" required>
+                            <input name="last_name" autocomplete="off" id="last_name" type="text"
+                                placeholder="last name" required value="{{ last_name or '' }}">
                         </div>
                     </div>
 
@@ -42,7 +44,7 @@
                             <i class="fas fa-envelope"></i>
                         </label>
                         <input name="email" autocomplete="off" id="email" type="email" placeholder=" email address ..."
-                            required>
+                            required value="{{ email or '' }}">
                     </div>
 
                     <div class="form-group">
@@ -55,7 +57,7 @@
 
                     <div class="form-options">
                         <label class="checkbox-container">
-                            <input name="remember" type="checkbox">
+                            <input name="agree" type="checkbox" {% if agree %}checked{% endif %}>
                             <div class="checkmark"></div>
                             Agree to policy & agreements
                         </label>
@@ -65,7 +67,6 @@
                     <button type="submit" class="form-submit-btn">sign In</button>
                 </form>
                 <p>Access Panel <a href="{{ url_for('auth.signin') }}">smart compost</a></p>
-
             </div>
         </div>
     </div>

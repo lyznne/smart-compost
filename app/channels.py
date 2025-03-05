@@ -15,7 +15,7 @@ from flask_socketio import emit, join_room
 from flask_login import current_user
 from app import socketio
 
-@socketio.on("connect", namespace="/notifications")
+@socketio.on("connect", namespace="/notification")
 def handle_connect():
     """Handles a new WebSocket connection."""
     if current_user.is_authenticated:
@@ -23,7 +23,7 @@ def handle_connect():
         join_room(user_room)
         emit("connected", {"message": "Connected to notifications!"}, room=user_room)
 
-@socketio.on("disconnect", namespace="/notifications")
+@socketio.on("disconnect", namespace="/notification")
 def handle_disconnect():
     """Handles WebSocket disconnection."""
     print(f"User {current_user.id} disconnected from notifications.")

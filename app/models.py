@@ -105,7 +105,8 @@ class Device(db.Model):
     location_city = db.Column(db.String(100), nullable=True)
     location_region = db.Column(db.String(100), nullable=True)
     location_country = db.Column(db.String(50), nullable=True)
-
+    wifi_connected = db.Column(db.Boolean, default=False)
+    
     user = db.relationship("Users", backref=db.backref("devices", lazy="dynamic"))
 
     def __repr__(self):
@@ -181,6 +182,24 @@ class CompostUserPreferences(db.Model):
     def __repr__(self):
         return f"<CompostPreferences for User {self.user_id}>"
 
+class CompostData(db.Model):
+    """
+    Model for storing real-time compost data.
+    """
+    __tablename__ = "compost_data"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    status = db.Column(db.String(50), nullable=False)  # e.g., "Optimal", "Suboptimal"
+    temperature = db.Column(db.Float, nullable=False)  # Temperature in Celsius
+    moisture = db.Column(db.Float, nullable=False)  # Moisture level in percentage
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # Timestamp of the data
+
+    user = db.relationship("Users", backref=db.backref("compost_data", lazy="dynamic"))
+
+    def __repr__(self):
+        return f"<CompostData {self.status} - {self.timestamp}>"
+
 
 def seed_environmental_data():
     """Seed the database with initial environmental variables."""
@@ -254,11 +273,12 @@ def create_sample_user():
 
 
 @login_manager.user_loader
-def user_loader(id):
+def user_loader(user_id):
     """
     Load user by ID for Flask-Login.
     """
-    return Users.query.get(int(id))
+
+    return Users.query.get(int(user_id))
 
 
 @login_manager.request_loader

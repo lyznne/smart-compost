@@ -21,7 +21,7 @@
             </a>
         </div>
         <div class="logout-button">
-            <a href="#" class="nav-button">
+            <a href="{{ url_for('auth.signout') }}" class="nav-button">
                 <i class="fas fa-sign-out-alt"></i>
             </a>
         </div>
@@ -39,8 +39,8 @@
             {% include 'app/components/profile.html' %}
         {% endif %}
     </main>
-    <!-- Footer -->
-    {% include 'includes/footer.html' %}
-    {% endblock %}
-
 </div>
+
+<!-- Footer -->
+{% include 'includes/footer.html' %}
+{% endblock %}

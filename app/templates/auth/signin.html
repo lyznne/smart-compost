@@ -21,7 +21,8 @@
             <!-- end header  -->
 
             <div class="form-card">
-                <form action="{{ url_for('auth.signin') }}" method="post" class="form">
+                <form action="{{ url_for('auth.signin') }}" method="POST" class="form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <div class="form-group">
                         <label for="email">
                             <i class="fas fa-envelope"></i>

@@ -5,7 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import emit
 from app import socketio
 
-db = SQLAlchemy()
+from app.models import db
 
 class NotificationManager:
     """Manages notifications for users across multiple channels, including real-time WebSockets."""
