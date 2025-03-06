@@ -33,7 +33,7 @@ class CompostModelTrainer:
         self.train_losses = []
         self.val_losses = []
 
-    def train_epoch(self, train_loader: Dataloader) -> float:
+    def train_epoch(self, train_loader: DataLoader) -> float:
         self.model.train()
         total_loss = 0
 

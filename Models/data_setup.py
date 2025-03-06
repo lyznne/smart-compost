@@ -91,7 +91,7 @@ class CompostTimeSeriesDataset(Dataset):
     def __init__(self, csv_path: str, sequence_length: int = 30):
         super().__init__()
         self.sequence_length = sequence_length
-        self.base_data = pd.read_csv(csv_path, delimeter=",", skip_blank_lines=True)
+        self.base_data = pd.read_csv(csv_path, delimiter=",", skip_blank_lines=True)
         self.base_data.columns = self.base_data.columns.str.strip()
 
         # Initialize time series data structures

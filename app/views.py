@@ -340,7 +340,7 @@ def profile():
         # Save changes to the database
         db.session.commit()
 
-        
+
 
         return redirect(url_for("app.profile"))
 
@@ -605,3 +605,5 @@ def unauthorized_handler():
     """
     flash("You must be logged in to access this page.", "warning")
     return redirect(url_for("auth.signin"))
+
+

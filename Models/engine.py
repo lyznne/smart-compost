@@ -11,13 +11,58 @@ SMART COMPOST - MODEL PROJECT.
 
 
                                     Copyright (c) 2024      - enos.vercel.app
+
+
 """
+from comet_ml.integration.pytorch import log_model
+from comet_ml import Experiment
+from json import dumps
+from Models.model import CompostLSTM
+from Models.train import CompostModelTrainer
+from app.models import TrainingRun, db
+
+from dotenv import load_dotenv
+import os
+from torch.utils.data import DataLoader
+import torch
+from datetime import datetime
 
 
-# Example usage
+# Load environment variables
+load_dotenv()
+
+# Load environment variables
+load_dotenv()
+
+
 def train_compost_model(
     train_loader: DataLoader, val_loader: DataLoader
 ) -> CompostLSTM:
+
+
+    """
+    Train the compost model and log metrics to Comet ML.
+    """
+
+    # Initialize Comet ML experiment
+    experiment = Experiment(
+        api_key=os.getenv("SMART_COMPOST_COMET_API_KEY"),
+        project_name=os.getenv("SMART_COMPOST_PROJECT_NAME"),
+        workspace=os.getenv("SMART_COMPOST_WORKSPACE"),
+    )
+
+    # Log hyperparameters
+    hyper_params = {
+        "input_size": 10,
+        "hidden_size": 64,
+        "num_layers": 2,
+        "dropout": 0.2,
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "epochs": 100,
+    }
+    experiment.log_parameters(hyper_params)
+
     # Calculate input size from data
     sample_features = next(iter(train_loader))[0]
     input_size = sample_features.shape[-1]  # number of features
@@ -34,63 +79,39 @@ def train_compost_model(
         early_stopping_patience=10,
     )
 
-    # Plot training history
-    trainer.plot_training_history()
+    # Log training and validation losses
+    for epoch, (train_loss, val_loss) in enumerate(
+        zip(history["train_losses"], history["val_losses"])
+    ):
+        experiment.log_metric("train_loss", train_loss, step=epoch)
+        experiment.log_metric("val_loss", val_loss, step=epoch)
+
+    # Save the trained model
+    model_path = "best_compost_model.pth"
+    torch.save(model.state_dict(), model_path)
+
+    # Log the model to Comet ML
+    log_model(experiment, model=model, model_name="CompostLSTM")
+
+    # Save training metadata to the database
+    training_run = TrainingRun(
+        model_name="CompostLSTM",
+        experiment_id=experiment.get_key(),
+        parameters=dumps(hyper_params),
+        metrics=dumps(
+            {
+                "final_train_loss": history["train_losses"][-1],
+                "final_val_loss": history["val_losses"][-1],
+            }
+        ),
+        status="completed",
+        start_time=datetime.utcnow(),
+        end_time=datetime.utcnow(),
+    )
+    db.session.add(training_run)
+    db.session.commit()
+
+    # End the experiment
+    experiment.end()
 
     return model
-
-
-if __name__ == "__main__":
-    # Assuming you have already created your dataset and dataloaders
-    from compost_dataset import create_compost_dataloader
-
-    # Create dataset and split into train/val
-    dataset_path = "path_to_your_dataset.csv"
-    dataset, full_dataloader = create_compost_dataloader(dataset_path)
-
-    # Split data into train and validation sets
-    train_size = int(0.8 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size]
-    )
-
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-
-    # Train the model
-    model = train_compost_model(train_loader, val_loader)
-
-# Example usage
-def create_compost_dataloader(
-    dataset_path: str, batch_size: int = 32, sequence_length: int = 30
-):
-    try:
-        dataset = CompostTimeSeriesDataset(
-            dataset_path, sequence_length=sequence_length
-        )
-        dataloader = DataLoader(
-            dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=2
-        )
-        return dataset, dataloader
-    except Exception as e:
-        print(f"Error creating dataloader: {e}")
-        return None, None
-
-
-if __name__ == "__main__":
-    root_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
-    dataset_path = os.path.join(root_dir, "data", "smart_compost_dataset101.csv")
-
-    dataset, dataloader = create_compost_dataloader(dataset_path)
-    if dataloader:
-        print("looping ...")
-        # Get a batch of data
-        for batch_features, batch_targets in dataloader:
-            print("Batch features shape:", batch_features.shape)
-            print("Batch targets shape:", batch_targets.shape)
-            print(
-                "\nFeature sequence (first day of first sample):", batch_features[0][0]
-            )
-            print("Target values:", batch_targets[0])
-            break

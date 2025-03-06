@@ -4,6 +4,8 @@ PYTHON = python3
 PIP = pip3
 APP = run.py
 REQ_FILE = requirements.txt
+GEN_SCRIPT = scripts/synthetic_dataset_generator.py
+
 
 # Default target
 .PHONY: help
@@ -25,6 +27,13 @@ help:
 	@echo "  make test        - Run tests with pytest in Docker"
 	@echo "  make clean-docker- Clean Docker Compose services and prune"
 	@echo "  make lint        - Lint code with black and flake8 in Docker"
+	@echo "  make generate-dataset    - Generates a new sythentic dataset for training smart compost model"
+
+# Generate sythentic dataset
+.PHONY: generate-dataset
+generate-dataset:
+	$(PYTHON) $(GEN_SCRIPT)
+
 
 # Create virtual environment and install requirements
 .PHONY: venv
@@ -59,7 +68,7 @@ activate:
 # Clean: Remove Python cache
 .PHONY: clean
 clean:
-	rm -rf __pycache__
+	rm -rf __pycache__ */__pycache__
 	find . -type f -name '*.pyc' -delete
 
 # Clean-full: Remove Python cache and virtual environment
