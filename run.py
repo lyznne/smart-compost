@@ -7,7 +7,7 @@ SMART COMPOST - MODEL PROJECT.
 * email   - emuthiani26@gmail.com
 
 
-                                    Copyright (c) 2024      - enos.vercel.app
+                                    Copyright (c) 2025      - enos.vercel.app
 '''
 
 
@@ -23,7 +23,7 @@ import torch
 
 # ---
 # Path to the dataset
-dataset_path = "data/smart_compost_dataset102.csv"
+dataset_path = "data/smart_compost_dataset104.csv"
 
 # create a dataset  and dataloader s
 dataset  =  CompostTimeSeriesDataset(dataset_path)

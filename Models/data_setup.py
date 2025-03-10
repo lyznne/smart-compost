@@ -15,11 +15,12 @@ SMART COMPOST - MODEL PROJECT.
 
 # imports
 from datetime import datetime, timedelta
+from pickle import NONE
 from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
 import torch
-from torch.utils.data import  Dataset
+from torch.utils.data import Dataset
 
 
 class WasteType:
@@ -84,18 +85,44 @@ class SeasonalEffects:
 class CompostTimeSeriesDataset(Dataset):
     """Compost Time Series for our Dataset
 
+      Handles both metadata-based datasets (with Variable column) and
+      measurement-based datasets (with direct measurement columns)
+
     Args:
         Dataset uses PyTorch Dataset
     """
 
-    def __init__(self, csv_path: str, sequence_length: int = 30):
+    def __init__(self, csv_path: str, sequence_length: int = 30, metadata_file=None):
         super().__init__()
         self.sequence_length = sequence_length
+
+        # Load the dataset
         self.base_data = pd.read_csv(csv_path, delimiter=",", skip_blank_lines=True)
         self.base_data.columns = self.base_data.columns.str.strip()
 
+        # Check if this is a metadata or measurement dataset
+        self.is_metadata_format = "Variable" in self.base_data.columns
+
+        # Load metadata file if provided and not already in metadata format
+        if metadata_file and not self.is_metadata_format:
+            self.metadata = pd.read_csv(
+                metadata_file, delimiter=",", skip_blank_lines=True
+            )
+            self.metadata.columns = self.metadata.columns.str.strip()
+        elif self.is_metadata_format:
+            self.metadata = self.base_data
+        else:
+            # Create default metadata from measurement columns
+            self.metadata = self._create_default_metadata()
+
         # Initialize time series data structures
-        self.time_series_data = self._generate_time_series_data()
+        if self.is_metadata_format:
+            # Original implementation for metadata format
+            self.time_series_data = self._generate_time_series_from_metadata()
+        else:
+            # New implementation for measurement format
+            self.time_series_data = self._generate_time_series_from_measurements()
+
         self.waste_types = self._initialize_waste_types()
         self.weather_data = self._initialize_weather_data()
 
@@ -104,6 +131,44 @@ class CompostTimeSeriesDataset(Dataset):
 
         # Create feature matrices
         self._create_feature_matrices()
+
+    def _create_default_metadata(self):
+        """Create default metadata for measurement-based datasets
+
+        Returns:
+            Dict: metadata columns
+        """
+        metadata_columns = [
+            "Variable",
+            "Type",
+            "Unit",
+            "OptimalRange",
+            "Dependencies",
+            "IntroductionStage",
+            "Frequency",
+            "Notes",
+        ]
+        metadata = pd.DataFrame(columns=metadata_columns)
+
+        # Add each measurement column as a variable
+        for col in self.base_data.columns:
+            if col.lower() not in ["date", "waste_type"]:
+                # Create default metadata row
+                metadata = metadata._append(
+                    {
+                        "Variable": col,
+                        "Type": "Numerical",
+                        "Unit": "Unknown",
+                        "OptimalRange": "0-100",
+                        "Dependencies": "",
+                        "IntroductionStage": "Initial",
+                        "Frequency": "Daily",
+                        "Notes": f"Auto-generated for {col}",
+                    },
+                    ignore_index=True,
+                )
+
+        return metadata
 
     def _generate_time_series_data(self) -> Dict[str, List[float]]:
         """Generate synthetic time series data for each variable
@@ -127,6 +192,53 @@ class CompostTimeSeriesDataset(Dataset):
                     for i in range(365)
                 ]
                 time_series[variable] = values
+
+        return time_series
+
+    def _generate_time_series_from_metadata(self):
+        """Original implementation that generates synthetic data from metadata"""
+        time_series = {}
+        start_date = datetime.now() - timedelta(days=365)
+        dates = [start_date + timedelta(days=i) for i in range(365)]
+
+        for _, row in self.metadata.iterrows():
+            variable = row["Variable"]
+            optimal_range = self._parse_range(row["OptimalRange"])
+
+            if optimal_range:
+                mid_point = (optimal_range[0] + optimal_range[1]) / 2
+                # Generate daily values with realistic variations
+                values = [
+                    self._generate_realistic_value(mid_point, optimal_range, dates[i])
+                    for i in range(365)
+                ]
+                time_series[variable] = values
+
+        return time_series
+
+    def _generate_time_series_from_measurements(self):
+        """New implementation that uses actual measurement data"""
+        time_series = {}
+
+        # Get all numeric columns except date
+        for col in self.base_data.columns:
+            if col.lower() not in ["date", "waste_type"]:
+                # Convert to numeric, coerce errors to NaN
+                values = pd.to_numeric(self.base_data[col], errors="coerce")
+
+                # Fill NaN values with mean or 0
+                if values.isna().any():
+                    values = values.fillna(
+                        values.mean() if not values.isna().all() else 0
+                    )
+
+                # Store values in time series
+                time_series[col] = values.tolist()
+
+                # If we don't have enough data for a full year, pad with repeated data
+                if len(values) < 365:
+                    repetitions = (365 // len(values)) + 1
+                    time_series[col] = (values.tolist() * repetitions)[:365]
 
         return time_series
 
@@ -222,10 +334,31 @@ class CompostTimeSeriesDataset(Dataset):
     def _process_optimal_ranges(self):
         """Process optimal ranges for all variables"""
         self.optimal_ranges = {}
-        for _, row in self.base_data.iterrows():
-            range_vals = self._parse_range(row["OptimalRange"])
-            if range_vals:
-                self.optimal_ranges[row["Variable"]] = range_vals
+
+        # Check if the dataset is in metadata format
+        if self.is_metadata_format:
+            # Process optimal ranges for metadata-based datasets
+            for _, row in self.metadata.iterrows():
+                if "OptimalRange" in row:
+                    range_vals = self._parse_range(row["OptimalRange"])
+                    if range_vals:
+                        self.optimal_ranges[row["Variable"]] = range_vals
+        else:
+            # Handle measurement-based datasets
+            # Use default optimal ranges for known variables
+            default_ranges = {
+                "Temperature": (45, 65),
+                "Moisture_Content": (40, 60),
+                "pH_Level": (6.5, 8.0),
+                "Oxygen_Level": (5, 15),
+            }
+
+            for var in self.time_series_data.keys():
+                if var in default_ranges:
+                    self.optimal_ranges[var] = default_ranges[var]
+                else:
+                    # Use a generic range for unknown variables
+                    self.optimal_ranges[var] = (0, 100)
 
     def _create_feature_matrices(self):
         """Create feature matrices for the dataset"""
@@ -278,14 +411,21 @@ class CompostTimeSeriesDataset(Dataset):
 
     def get_variable_metadata(self) -> pd.DataFrame:
         """Return metadata for all variables"""
-        return self.base_data[
-            [
-                "Variable",
-                "Type",
-                "Unit",
-                "Dependencies",
-                "IntroductionStage",
-                "Frequency",
-                "Notes",
+        if "Variable" in self.metadata.columns:
+            return self.metadata[
+                [
+                    col
+                    for col in [
+                        "Variable",
+                        "Type",
+                        "Unit",
+                        "Dependencies",
+                        "IntroductionStage",
+                        "Frequency",
+                        "Notes",
+                    ]
+                    if col in self.metadata.columns
+                ]
             ]
-        ]
+        else:
+            return pd.DataFrame()

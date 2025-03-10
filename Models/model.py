@@ -10,16 +10,16 @@ SMART COMPOST - MODEL PROJECT.
 * email   - emuthiani26@gmail.com
 
 
-                                    Copyright (c) 2024      - enos.vercel.app
+                                    Copyright (c) 2025      - enos.vercel.app
 """
 
 # imports
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class CompostLSTM(nn.Module):
-
     def __init__(
         self,
         input_size: int,
@@ -42,24 +42,53 @@ class CompostLSTM(nn.Module):
 
         # Attention layer
         self.attention = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size), nn.Tanh(), nn.Linear(hidden_size, 1)
+            nn.Linear(hidden_size, hidden_size),
+            nn.Tanh(),
+            nn.Linear(hidden_size, 1),
         )
+
+        # Dropout layer for LSTM outputs
+        self.dropout = nn.Dropout(dropout)
 
         # Output layers for temperature and moisture prediction
         self.regression_head = nn.Sequential(
             nn.Linear(hidden_size, hidden_size // 2),
-            nn.ReLU(),
+            nn.LeakyReLU(),  # Experiment with LeakyReLU
             nn.Dropout(dropout),
             nn.Linear(hidden_size // 2, 2),  # temperature and moisture as the outputs
         )
+
+        # Initialize weights
+        self._init_weights()
+
+    def _init_weights(self):
+        """Initialize weights for LSTM and attention layers."""
+        for name, param in self.lstm.named_parameters():
+            if "weight" in name:
+                nn.init.xavier_normal_(param)
+            elif "bias" in name:
+                nn.init.zeros_(param)
+
+        for layer in self.attention:
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_normal_(layer.weight)
+                nn.init.zeros_(layer.bias)
+
+        for layer in self.regression_head:
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_normal_(layer.weight)
+                nn.init.zeros_(layer.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # LSTM forward pass
         lstm_out, _ = self.lstm(x)  # Shape: [batch, seq_len, hidden_size]
 
+        # Apply dropout to LSTM outputs
+        lstm_out = self.dropout(lstm_out)
+
         # Apply attention
         attention_weights = self.attention(lstm_out)  # Shape: [batch, seq_len, 1]
-        attention_weights = torch.softmax(attention_weights, dim=1)
+        attention_weights = F.softmax(attention_weights, dim=1)
 
         # Weighted sum of LSTM outputs
         context = torch.sum(
@@ -68,5 +97,8 @@ class CompostLSTM(nn.Module):
 
         # Generate predictions
         predictions = self.regression_head(context)  # Shape: [batch, 2]
+
+        # Apply output activation (optional)
+        # predictions = torch.sigmoid(predictions)  # Use if outputs are normalized
 
         return predictions

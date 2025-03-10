@@ -136,7 +136,7 @@ def check_table_exists_and_same(database_path: str = database_path, tablename: s
 def save_dataset_with_incremented_table(
     dataset_path: str = dataset_path,
     database_path: str = database_path,
-    tablename: str,
+    # tablename: str,
     delimiter: str = ",",
     encoding: str = "UTF-8",
 ):
