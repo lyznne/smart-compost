@@ -43,7 +43,7 @@ class CompostLSTM(nn.Module):
         # Attention layer
         self.attention = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
+            nn.Tanh(),  # hyperbolic tangent
             nn.Linear(hidden_size, 1),
         )
 
@@ -102,3 +102,15 @@ class CompostLSTM(nn.Module):
         # predictions = torch.sigmoid(predictions)  # Use if outputs are normalized
 
         return predictions
+
+    def get_hidden_states(self, x):
+        # Initialize hidden state
+        batch_size = x.size(0)
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size).to(x.device)
+
+        # Forward pass through LSTM
+        output, (hn, cn) = self.lstm(x, (h0, c0))
+
+        # Return hidden states (last layer)
+        return hn[-1]

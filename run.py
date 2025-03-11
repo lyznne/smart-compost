@@ -23,7 +23,7 @@ import torch
 
 # ---
 # Path to the dataset
-dataset_path = "data/smart_compost_dataset104.csv"
+dataset_path = "data/smart_compost_dataset106.csv"
 
 # create a dataset  and dataloader s
 dataset  =  CompostTimeSeriesDataset(dataset_path)

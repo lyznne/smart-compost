@@ -27,6 +27,7 @@ from torch.utils.data import DataLoader
 import torch
 from datetime import datetime
 from torch.optim.lr_scheduler import StepLR
+import numpy as np
 
 # Load environment variables
 load_dotenv()
@@ -83,7 +84,7 @@ def train_compost_model(
 
     try:
         # Calculate input size from data
-        sample_features = next(iter(train_loader))[0]
+        sample_features, sample_targets = next(iter(train_loader))
         input_size = sample_features.shape[-1]  # number of features
     except Exception as e:
         print(f"Failed to calculate input size: {e}")
@@ -129,33 +130,35 @@ def train_compost_model(
     if experiment:
         log_model(experiment, model=model, model_name="CompostLSTM")
 
-    # Log a 3D table of training metrics
+    # Log a table of training metrics
     table_data = []
     for epoch, (train_loss, val_loss) in enumerate(
         zip(history["train_losses"], history["val_losses"])
     ):
         # Calculate learning rate for the current epoch
-        lr = optimizer.param_groups[0]["lr"]
+        lr = hyper_params["learning_rate"] * (
+            0.1 ** (epoch // 10)
+        )  # Match the scheduler logic
 
-        # Add additional metrics (e.g., gradient norms, learning rate)
+        # Safely access gradient norms if they exist in history
+        gradient_norms = history.get("gradient_norms", [])
+        gradient_norm = gradient_norms[epoch] if epoch < len(gradient_norms) else 0.0
+
+        # Add metrics to table data
         table_data.append(
             {
                 "epoch": epoch + 1,
                 "train_loss": train_loss,
                 "val_loss": val_loss,
                 "learning_rate": lr,
-                "gradient_norm": history.get(
-                    "gradient_norms", [0] * len(history["train_losses"])
-                )[
-                    epoch
-                ],  # Log gradient norm (if available)
+                "gradient_norm": gradient_norm,
             }
         )
 
-    # Log the 3D table
+    # Log the table
     if experiment:
         experiment.log_table(
-            filename="training_metrics_3d.csv",
+            filename="training_metrics.csv",
             tabular_data=table_data,
             headers=[
                 "epoch",
@@ -166,25 +169,117 @@ def train_compost_model(
             ],
         )
 
-    # Log 3D points (example)
-    if experiment:
+    # Log 3D points using real model data
+    if experiment and model:
         try:
-            # Generate synthetic 3D points for demonstration
-            import numpy as np
+            # Get a batch of data for visualization
+            batch_x, batch_y = next(iter(train_loader))
 
-            np.random.seed(42)
-            points = np.random.rand(10, 6)  # 10 points, with XYZ and RGB values
-            points[:, 3:] = points[:, 3:] / np.max(points[:, 3:])  # Normalize colors
+            # Get model outputs for coloring by prediction error
+            model.eval()
+            with torch.no_grad():
+                predictions = model(batch_x).detach().cpu().numpy()
+                batch_y = batch_y.detach().cpu().numpy()
 
-            # Log 3D points to Comet
-            experiment.log_points_3d(
-                scene_name="Training3DPoints",
-                points=points.tolist(),  # Convert numpy array to list
-                step=0,  # Associate with step 0
-                metadata={"description": "Example 3D points logged during training"},
-            )
+                # Extract hidden states for 3D coordinates
+                hidden_states = model.get_hidden_states(batch_x)
+
+                # Use t-SNE or PCA to reduce dimensionality if needed
+                from sklearn.decomposition import PCA
+
+                num_samples = min(50, len(hidden_states))
+                hidden_sample = hidden_states[:num_samples].reshape(num_samples, -1)
+
+                # Reduce to 3 dimensions for visualization
+                pca = PCA(n_components=3)
+                coords_3d = pca.fit_transform(hidden_sample)
+
+                # Calculate error for color mapping (if applicable)
+                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
+                    # For multi-output models
+                    error = np.mean(
+                        np.abs(predictions[:num_samples] - batch_y[:num_samples]),
+                        axis=1,
+                    )
+                else:
+                    # For single output models
+                    error = np.abs(
+                        predictions[:num_samples].flatten()
+                        - batch_y[:num_samples].flatten()
+                    )
+
+                # Normalize error for color scaling
+                max_error = np.max(error) if np.max(error) > 0 else 1.0
+                normalized_error = error / max_error
+
+                # Create RGB colors (red for high error, blue for low)
+                colors = np.zeros((num_samples, 3))
+                colors[:, 0] = normalized_error  # Red channel
+                colors[:, 2] = 1 - normalized_error  # Blue channel
+
+                # Combine coordinates and colors into points format
+                points_data = np.hstack((coords_3d, colors))
+
+                # Log 3D points to Comet
+                experiment.log_points_3d(
+                    scene_name="LSTM_Hidden_States",
+                    points=points_data.tolist(),
+                    step=len(history["train_losses"]) - 1,  # Last epoch
+                    metadata={
+                        "description": "LSTM hidden states visualized in 3D with prediction error coloring",
+                        "feature_names": [
+                            "PCA1",
+                            "PCA2",
+                            "PCA3",
+                            "Red",
+                            "Green",
+                            "Blue",
+                        ],
+                        "max_error": float(max_error),
+                        "mean_error": float(np.mean(error)),
+                    },
+                )
         except Exception as e:
-            print(f"Failed to log 3D points: {e}")
+            print(f"Failed to log 3D points from model data: {e}")
+            # Fall back to logging basic 3D visualization if the advanced one fails
+            try:
+                # Generate points from model weights (first 3 layers)
+                params = list(model.parameters())
+                if len(params) >= 3:
+                    weights = [
+                        p.detach().cpu().numpy().flatten()[:100] for p in params[:3]
+                    ]
+                    weights = [
+                        w / np.linalg.norm(w) if np.linalg.norm(w) > 0 else w
+                        for w in weights
+                    ]
+                    weights_array = np.array(weights).T
+
+                    # Ensure we have at least 10 points
+                    if weights_array.shape[0] < 10:
+                        weights_array = np.tile(
+                            weights_array, (10 // weights_array.shape[0] + 1, 1)
+                        )[:10]
+
+                    # Add simple coloring
+                    colors = np.zeros((weights_array.shape[0], 3))
+                    colors[:, 0] = np.linspace(
+                        0, 1, colors.shape[0]
+                    )  # Gradient coloring
+                    colors[:, 2] = np.linspace(1, 0, colors.shape[0])
+
+                    points = np.hstack((weights_array, colors))
+
+                    experiment.log_points_3d(
+                        scene_name="Model_Weights",
+                        points=points.tolist(),
+                        step=len(history["train_losses"]) - 1,
+                        metadata={
+                            "description": "Model weights visualized in 3D space"
+                        },
+                    )
+            except Exception as nested_e:
+                print(f"Failed to log fallback 3D visualization: {nested_e}")
 
     # Save training metadata to the database
     try:

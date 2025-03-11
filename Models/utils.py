@@ -104,7 +104,7 @@ def calculate_dataset_hash(dataset_path: str = dataset_path, delimiter: str = ",
 
 
 
-def check_table_exists_and_same(database_path: str = database_path, tablename: str, dataset_hash: str) -> bool:
+def check_table_exists_and_same(tablename: str,   dataset_hash: str, database_path: str = database_path) -> bool:
     """
     Check if a table exists in the database and if its hash matches the dataset hash.
 
@@ -134,9 +134,9 @@ def check_table_exists_and_same(database_path: str = database_path, tablename: s
 
 
 def save_dataset_with_incremented_table(
+    tablename: str,
     dataset_path: str = dataset_path,
     database_path: str = database_path,
-    # tablename: str,
     delimiter: str = ",",
     encoding: str = "UTF-8",
 ):
