@@ -23,7 +23,7 @@ import torch
 
 # ---
 # Path to the dataset
-dataset_path = "data/smart_compost_dataset106.csv"
+dataset_path = "data/smart_compost_dataset101.csv"
 
 # create a dataset  and dataloader s
 dataset  =  CompostTimeSeriesDataset(dataset_path)
@@ -47,11 +47,11 @@ app = create_app(DevelopmentConfig)
 # Driver code
 if __name__ == "__main__":
     # Push the application context
-    with app.app_context():
-        # Train the model
-        print("Starting model training...")
-        train_compost_model(train_loader, val_loader)
-        print("Model training completed!")
+    # with app.app_context():
+    #     # Train the model
+    #     print("Starting model training...")
+    #     train_compost_model(train_loader, val_loader)
+    #     print("Model training completed!")
 
     # Serve the app with websockets
     socketio.run(
@@ -60,5 +60,5 @@ if __name__ == "__main__":
         port=5000,
         debug=True,
         allow_unsafe_werkzeug=True,
-        manage_session=False, # not to overide the app session
+        # manage_session=False, # not to overide the app session
     )

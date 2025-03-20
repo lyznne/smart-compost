@@ -1,16 +1,16 @@
 import os
 import logging
-from typing import List, Optional
-import pywifi
-from pywifi import const
+import platform
+import subprocess
+import socket
+from typing import List, Optional, Dict
 import time
-import netifaces
 
 
 class NetworkManager:
     def __init__(self, env: str = "development"):
         """
-        Initialize NetworkManager with environment-specific configuration
+        Initialize NetworkManager with environment-specific configuration.
 
         Args:
             env (str): Environment mode - 'development' or 'production'
@@ -22,24 +22,16 @@ class NetworkManager:
         self.env = env
         self.config = self._load_config()
 
-        try:
-            self.wifi = pywifi.PyWiFi()
-            interfaces = self.wifi.interfaces()
+        # Detect the operating system
+        self.os_type = platform.system().lower()
+        self.logger.info(f"Running on {self.os_type.capitalize()}")
 
-            if not interfaces:
-                self.logger.warning("No WiFi interfaces found")
-                self.iface = None
-            else:
-                self.iface = interfaces[0]
-                self.logger.info(f"Using WiFi interface: {self.iface}")
-
-        except Exception as e:
-            self.logger.error(f"Error initializing WiFi: {e}")
-            self.iface = None
+        # Initialize platform-specific WiFi management
+        self.wifi_interface = self._get_wifi_interface()
 
     def _setup_logging(self, env: str) -> logging.Logger:
         """
-        Set up logging based on environment
+        Set up logging based on environment.
 
         Args:
             env (str): Environment mode
@@ -71,9 +63,9 @@ class NetworkManager:
 
         return logger
 
-    def _load_config(self) -> dict:
+    def _load_config(self) -> Dict:
         """
-        Load configuration based on environment
+        Load configuration based on environment.
 
         Returns:
             dict: Configuration dictionary
@@ -91,49 +83,105 @@ class NetworkManager:
                 "log_level": logging.DEBUG,
             }
 
-    def scan_networks(self) -> List[dict]:
+    def _get_wifi_interface(self) -> Optional[str]:
         """
-        Scan and return available WiFi networks
+        Get the WiFi interface name based on the operating system.
 
         Returns:
-            List[dict]: Sorted list of network information
+            Optional[str]: WiFi interface name or None if not found
         """
-        if not self.iface:
-            self.logger.warning("No WiFi interface available")
-            return []
+        if self.os_type == "linux":
+            try:
+                result = subprocess.run(["nmcli", "device"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "wifi" in line.lower():
+                        return line.split()[0]
+            except Exception as e:
+                self.logger.error(f"Error getting WiFi interface on Linux: {e}")
 
-        try:
-            self.iface.disconnect()
-            time.sleep(1)
-            self.iface.scan()
-            time.sleep(self.config["scan_timeout"])
+        elif self.os_type == "windows":
+            try:
+                result = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "name" in line.lower():
+                        return line.split(":")[1].strip()
+            except Exception as e:
+                self.logger.error(f"Error getting WiFi interface on Windows: {e}")
 
-            wifi_networks = self.iface.scan_results()
-            networks = []
+        elif self.os_type == "darwin":  # macOS
+            try:
+                result = subprocess.run(["networksetup", "-listallhardwareports"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "wi-fi" in line.lower():
+                        return line.split(":")[1].strip()
+            except Exception as e:
+                self.logger.error(f"Error getting WiFi interface on macOS: {e}")
 
-            for network in wifi_networks:
-                ssid = network.ssid.rstrip("\x00")
-                if not ssid:
-                    continue
+        self.logger.warning("No WiFi interface found")
+        return None
 
-                network_info = {
-                    "ssid": ssid,
-                    "signal_strength": abs(network.signal),
-                    "security": self._get_security_type(network),
-                    "bssid": network.bssid,
-                    "signal_quality": self._get_signal_quality(abs(network.signal)),
-                }
-                networks.append(network_info)
+    def scan_networks(self) -> List[Dict]:
+        """
+        Scan and return available WiFi networks.
 
-            return sorted(networks, key=lambda x: x["signal_strength"], reverse=True)
+        Returns:
+            List[Dict]: List of network information
+        """
+        networks = []
 
-        except Exception as e:
-            self.logger.error(f"Network scan error: {e}")
-            return []
+        if self.os_type == "linux":
+            try:
+                result = subprocess.run(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY", "device", "wifi", "list"],
+                                       capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    ssid, signal, security = line.split(":")
+                    networks.append({
+                        "ssid": ssid,
+                        "signal_strength": int(signal),
+                        "security": security,
+                        "signal_quality": self._get_signal_quality(int(signal)),
+                    })
+            except Exception as e:
+                self.logger.error(f"Error scanning networks on Linux: {e}")
+
+        elif self.os_type == "windows":
+            try:
+                result = subprocess.run(["netsh", "wlan", "show", "networks"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "SSID" in line:
+                        ssid = line.split(":")[1].strip()
+                        networks.append({
+                            "ssid": ssid,
+                            "signal_strength": 0,  # Windows does not provide signal strength in this command
+                            "security": "Unknown",
+                            "signal_quality": "Unknown",
+                        })
+            except Exception as e:
+                self.logger.error(f"Error scanning networks on Windows: {e}")
+
+        elif self.os_type == "darwin":  # macOS
+            try:
+                result = subprocess.run(["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"],
+                                       capture_output=True, text=True)
+                for line in result.stdout.splitlines()[1:]:  # Skip header
+                    parts = line.split()
+                    ssid = parts[0]
+                    signal = int(parts[2])
+                    security = parts[3]
+                    networks.append({
+                        "ssid": ssid,
+                        "signal_strength": signal,
+                        "security": security,
+                        "signal_quality": self._get_signal_quality(signal),
+                    })
+            except Exception as e:
+                self.logger.error(f"Error scanning networks on macOS: {e}")
+
+        return networks
 
     def _get_signal_quality(self, strength: int) -> str:
         """
-        Classify signal strength
+        Classify signal strength.
 
         Args:
             strength (int): Signal strength
@@ -147,113 +195,97 @@ class NetworkManager:
             return "Medium"
         return "Weak"
 
-    def _get_security_type(self, network) -> str:
+    def connect_to_network(self, ssid: str, password: Optional[str] = None) -> bool:
         """
-        Determine network security type
-
-        Args:
-            network: WiFi network object
-
-        Returns:
-            str: Security type description
-        """
-        if not network.akm:
-            return "Open"
-
-        securities = {
-            const.AKM_TYPE_NONE: "Open",
-            const.AKM_TYPE_WPA2PSK: "WPA2",
-            const.AKM_TYPE_WPA2ENTERPRISE: "WPA2 Enterprise",
-            const.AKM_TYPE_WPA1PSK: "WPA1",
-            const.AKM_TYPE_WPA1ENTERPRISE: "WPA1 Enterprise",
-        }
-
-        return securities.get(network.akm[0], "Unknown")
-
-    def connect_to_network(self, ssid: str, password: str = None) -> bool:
-        """
-        Connect to a specific WiFi network
+        Connect to a specific WiFi network.
 
         Args:
             ssid (str): Network SSID
-            password (str, optional): Network password
+            password (Optional[str]): Network password
 
         Returns:
             bool: Connection status
         """
-        if not self.iface:
+        if not self.wifi_interface:
             self.logger.error("No WiFi interface available")
             return False
 
         try:
-            self.iface.disconnect()
-            time.sleep(1)
+            if self.os_type == "linux":
+                if password:
+                    subprocess.run(["nmcli", "device", "wifi", "connect", ssid, "password", password], check=True)
+                else:
+                    subprocess.run(["nmcli", "device", "wifi", "connect", ssid], check=True)
 
-            profile = pywifi.Profile()
-            profile.ssid = ssid
+            elif self.os_type == "windows":
+                if password:
+                    subprocess.run(["netsh", "wlan", "connect", f"name={ssid}", f"ssid={ssid}", f"key={password}"], check=True)
+                else:
+                    subprocess.run(["netsh", "wlan", "connect", f"name={ssid}", f"ssid={ssid}"], check=True)
 
-            if password:
-                profile.auth = const.AUTH_ALG_OPEN
-                profile.akm.append(const.AKM_TYPE_WPA2PSK)
-                profile.cipher = const.CIPHER_TYPE_CCMP
-                profile.key = password
-            else:
-                profile.auth = const.AUTH_ALG_OPEN
-                profile.akm.append(const.AKM_TYPE_NONE)
+            elif self.os_type == "darwin":  # macOS
+                if password:
+                    subprocess.run(["networksetup", "-setairportnetwork", self.wifi_interface, ssid, password], check=True)
+                else:
+                    subprocess.run(["networksetup", "-setairportnetwork", self.wifi_interface, ssid], check=True)
 
-            self.iface.remove_all_network_profiles()
-            tmp_profile = self.iface.add_network_profile(profile)
-            self.iface.connect(tmp_profile)
+            self.logger.info(f"Successfully connected to {ssid}")
+            return True
 
-            time.sleep(self.config["connection_timeout"])
-
-            connection_status = self.iface.status() == const.IFACE_CONNECTED
-
-            if connection_status:
-                self.logger.info(f"Successfully connected to {ssid}")
-            else:
-                self.logger.warning(f"Failed to connect to {ssid}")
-
-            return connection_status
-
-        except Exception as e:
-            self.logger.error(f"Network connection error: {e}")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to connect to {ssid}: {e}")
             return False
 
-    def get_current_connection(self) -> Optional[dict]:
+    def get_current_connection(self) -> Optional[Dict]:
         """
-        Get details of current WiFi connection
+        Get details of the current WiFi connection.
 
         Returns:
-            Optional[dict]: Current connection details or None
+            Optional[Dict]: Current connection details or None
         """
-        if not self.iface or self.iface.status() != const.IFACE_CONNECTED:
-            return None
-
         try:
-            current_profile = self.iface.current_network()
+            ip_address = socket.gethostbyname(socket.gethostname())
             return {
-                "ssid": current_profile.ssid,
-                "ip_address": self._get_ip_address(),
+                "ssid": self._get_current_ssid(),
+                "ip_address": ip_address,
             }
         except Exception as e:
             self.logger.error(f"Error getting current connection: {e}")
             return None
 
-    def _get_ip_address(self) -> str:
+    def _get_current_ssid(self) -> Optional[str]:
         """
-        Get current IP address
+        Get the SSID of the current WiFi connection.
 
         Returns:
-            str: IP address or 'Unknown'
+            Optional[str]: SSID or None if not connected
         """
-        try:
-            gws = netifaces.gateways()
-            default_interface = gws["default"][netifaces.AF_INET][1]
-            addresses = netifaces.ifaddresses(default_interface)
-            return addresses[netifaces.AF_INET][0]["addr"]
-        except Exception as e:
-            self.logger.warning(f"Could not retrieve IP address: {e}")
-            return "Unknown"
+        if self.os_type == "linux":
+            try:
+                result = subprocess.run(["nmcli", "-t", "-f", "ACTIVE,SSID", "device", "wifi"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "yes" in line:
+                        return line.split(":")[1]
+            except Exception as e:
+                self.logger.error(f"Error getting current SSID on Linux: {e}")
 
-    
+        elif self.os_type == "windows":
+            try:
+                result = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "SSID" in line:
+                        return line.split(":")[1].strip()
+            except Exception as e:
+                self.logger.error(f"Error getting current SSID on Windows: {e}")
+
+        elif self.os_type == "darwin":  # macOS
+            try:
+                result = subprocess.run(["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"],
+                                       capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "SSID" in line:
+                        return line.split(":")[1].strip()
+            except Exception as e:
+                self.logger.error(f"Error getting current SSID on macOS: {e}")
+
+        return None

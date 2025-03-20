@@ -1,37 +1,110 @@
 version: '3.8'
 
 services:
-  flask_app:
-    build: .
-    ports:
-      - "5000:5000"
-    volumes:
-      - .:/app
-    environment:
-      - FLASK_APP=run.py
-      - FLASK_ENV=development
-      - COMET_API_KEY=${COMET_API_KEY}
-      - COMET_PROJECT_NAME=${COMET_PROJECT_NAME}
-      - COMET_WORKSPACE=${COMET_WORKSPACE}
+  # Flask application service with Socket.IO
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-compost-app
+    restart: unless-stopped
     depends_on:
       - db
-    networks:
-      - compost_network
-
-  db:
-    image: postgres:13
     environment:
-      - POSTGRES_DB=smart_compost
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - DATABASE_URI=mysql+pymysql://compost_user:${MYSQL_PASSWORD}@db:3306/smart_compost
+      - SMART_COMPOST_COMET_API_KEY=${COMET_API_KEY}
+      - SMART_COMPOST_PROJECT_NAME=${COMET_PROJECT_NAME}
+      - SMART_COMPOST_WORKSPACE=${COMET_WORKSPACE}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./data:/app/data  # Mount data directory for datasets
+      - ./models:/app/models  # Mount models directory for saved models
+      - ./logs:/app/logs  # Mount logs directory
     networks:
-      - compost_network
+      - smart-compost-network
+    ports:
+      - "5000:5000"  # Expose port for direct access during development
 
-networks:
-  compost_network:
-    driver: bridge
+  # MySQL database service
+  db:
+    image: mysql:8.0
+    container_name: smart-compost-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=smart_compost
+      - MYSQL_USER=compost_user
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - smart-compost-network
+
+  # Caddy web server service with WebSocket support
+  caddy:
+    image: caddy:2.6-alpine
+    container_name: smart-compost-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    networks:
+      - smart-compost-network
 
 volumes:
-  postgres_data:
+  mysql-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  smart-compost-network:
+    driver: bridge
+
+# version: '3.8'
+
+# services:
+#   flask_app:
+#     build: .
+#     ports:
+#       - "5000:5000"
+#     volumes:
+#       - .:/app
+#     environment:
+#       - FLASK_APP=run.py
+#       - FLASK_ENV=development
+#       - COMET_API_KEY=${COMET_API_KEY}
+#       - COMET_PROJECT_NAME=${COMET_PROJECT_NAME}
+#       - COMET_WORKSPACE=${COMET_WORKSPACE}
+#     depends_on:
+#       - db
+#     networks:
+#       - compost_network
+
+#   db:
+#     image: postgres:13
+#     environment:
+#       - POSTGRES_DB=smart_compost
+#       - POSTGRES_USER=postgres
+#       - POSTGRES_PASSWORD=postgres
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     networks:
+#       - compost_network
+
+# networks:
+#   compost_network:
+#     driver: bridge
+
+# volumes:
+#   postgres_data:

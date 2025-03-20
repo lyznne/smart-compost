@@ -94,7 +94,10 @@ def train():
     """
     Train the compost model.
     """
+    from app import logger
     try:
+        logger.info("Training request received.")
+
         # Path to the dataset
         dataset_path = "data/smart_compost_dataset101.csv"
 
@@ -109,10 +112,16 @@ def train():
         val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
         # Train the model
+        logger.info("Starting model training...")
         train_compost_model(train_loader, val_loader)
+        logger.info("Model training completed successfully.")
 
         return jsonify({"message": "Model trained successfully"}), 200
+    except FileNotFoundError as e:
+        logger.error(f"Dataset file not found: {e}")
+        return jsonify({"error": "Dataset file not found"}), 404
     except Exception as e:
+        logger.error(f"Error during training: {e}")
         return jsonify({"error": str(e)}), 500
 
 

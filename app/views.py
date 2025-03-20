@@ -25,7 +25,9 @@ from app.util import get_client_ip, register_device
 from flask import request
 from app.models  import db
 from app import logger
-
+import psutil
+import os
+import torch
 
 # Define the blueprint for routes
 blueprint = Blueprint("app", __name__)
@@ -292,6 +294,59 @@ def stats():
         compost_maturity=compost_maturity,
         environmental_impact=environmental_impact,
     )
+
+
+@blueprint.route("/health", methods=["GET"])
+def health_check():
+    """
+    Simple health check endpoint for the Caddy server and container orchestration.
+
+    Returns:
+        JSON response with status 'ok' if the service is running.
+    """
+    from flask import Blueprint, jsonify, current_app
+
+    # Get basic system information
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+
+    # Check GPU availability if using PyTorch
+    gpu_available = torch.cuda.is_available() if hasattr(torch, 'cuda') else False
+    gpu_info = {}
+    if gpu_available:
+        gpu_info = {
+            'device_name': torch.cuda.get_device_name(0),
+            'device_count': torch.cuda.device_count(),
+            'memory_allocated': f"{torch.cuda.memory_allocated(0) / 1024**2:.2f} MB",
+            'memory_reserved': f"{torch.cuda.memory_reserved(0) / 1024**2:.2f} MB"
+        }
+
+    # Check if we can access the database
+    db_status = 'unknown'
+    try:
+        from app.models import db
+        db.engine.execute('SELECT 1')
+        db_status = 'connected'
+    except Exception as e:
+        db_status = f'error: {str(e)}'
+
+    # Check socketio status
+    socketio_status = 'active' if hasattr(current_app, 'socketio') else 'inactive'
+
+    return jsonify({
+        'status': 'ok',
+        'service': 'smart_compost',
+        'version': '1.0.0',
+        'env': os.environ.get('FLASK_ENV', 'production'),
+        'system': {
+            'memory_percent': f"{memory.percent}%",
+            'cpu_percent': f"{psutil.cpu_percent()}%",
+            'disk_percent': f"{disk.percent}%"
+        },
+        'database': db_status,
+        'socketio': socketio_status,
+        'gpu': gpu_info if gpu_available else 'not available'
+    }), 200
 
 
 @blueprint.route("/profile", methods=["GET", "POST"])
@@ -605,5 +660,3 @@ def unauthorized_handler():
     """
     flash("You must be logged in to access this page.", "warning")
     return redirect(url_for("auth.signin"))
-
-

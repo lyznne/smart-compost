@@ -101,7 +101,7 @@ class CompostModelTrainer:
                 best_val_loss = val_loss
                 patience_counter = 0
                 # Save the best model
-                torch.save(self.model.state_dict(), "best_model.pth")
+                torch.save(self.model.state_dict(), "best_compost_model.pth")
             else:
                 patience_counter += 1
                 if patience_counter >= early_stopping_patience:

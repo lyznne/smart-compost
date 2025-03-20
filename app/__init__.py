@@ -36,11 +36,14 @@ migrate = Migrate()
 socketio = SocketIO(logger=True, engineio_logger=True)
 csrf  =  CSRFProtect()
 
+# Ensure the logs directory exists
+os.makedirs("logs", exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    filename="smart_compost.log",
+    filename="logs/smart_compost.log",  # Save the log file in the logs folder
 )
 logger = logging.getLogger(__name__)
 

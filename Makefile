@@ -51,6 +51,7 @@ run:
 .PHONY: run-socket
 run-socket:
 	FLASK_APP=$(APP) flask run --with-threads
+	# $(PYTHON) -m flask_socketio run
 	# Alternative: python -m flask_socketio run (uncomment if preferred)
 	# $(PYTHON) -m flask_socketio run
 
