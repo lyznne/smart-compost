@@ -71,7 +71,7 @@ def train_compost_model(
         "input_size": 25,
         "hidden_size": 256,
         "num_layers": 3,
-        "dropout": 0.3,
+        "dropout": 0.2,
         "learning_rate": 0.0001,
         "batch_size": 64,
         "epochs": 100,

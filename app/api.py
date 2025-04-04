@@ -131,6 +131,7 @@ def train():
 @api_blueprint.route("/predict", methods=["GET", "POST"])
 @csrf.exempt
 def predict():
+    from app import logger
     """
     Make predictions using the trained model and save the results to the database.
     """
@@ -141,25 +142,26 @@ def predict():
         if not input_data or not user_id:
             return jsonify({"error": "Input data and user_id are required"}), 400
 
-        # Convert input data to tensor
-        input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
+        # Reshape the input data to match model's expectations
+        # LSTM expects input shape: [batch_size, sequence_length, features]
+        input_tensor = torch.tensor(input_data, dtype=torch.float32)
 
+        # Ensure correct dimensions: [1 (batch), 1 (sequence), 25 (features)]
+        input_tensor = input_tensor.view(1, 1, -1)
 
         # Load the trained model
         basedir = os.path.abspath(os.path.dirname(__file__))
         MODEL_PATH = os.path.join(basedir, "..", "best_compost_model.pth")
-        model = CompostLSTM(input_size=10, hidden_size=64, num_layers=3, dropout=0.3)
+        model = CompostLSTM(input_size=25, hidden_size=256, num_layers=3, dropout=0.2)
         model.load_state_dict(torch.load(MODEL_PATH))
         model.eval()
-
-
 
         # Make predictions
         with torch.no_grad():
             predictions = model(input_tensor)
 
-        # Confidence metric (optional)
-        prediction_confidence = float(torch.sigmoid(predictions).mean().item())
+        # Confidence metric (using softmax for multi-output model)
+        prediction_confidence = float(torch.nn.functional.softmax(predictions, dim=1).max().item())
 
         # Extract temperature and moisture predictions
         temperature_pred = predictions[0][0].item()  # First output (temperature)
@@ -174,11 +176,18 @@ def predict():
 
         # Save prediction details to the database
         compost_data = CompostData(
-            user_id=user_id,
+             user_id=user_id,
             status=status,
             temperature=temperature_pred,
             moisture=moisture_pred,
             timestamp=datetime.utcnow(),
+           ph=request.json.get("pH", 0.0),
+            oxygen_level=request.json.get("oxygen_level", 0.0),
+            carbon_nitrogen_ratio=request.json.get("carbon_nitrogen_ratio", 0.0),
+            nitrogen_content=request.json.get("nitrogen_content", 0.0),
+            potassium_content=request.json.get("potassium_content", 0.0),
+            phosphorus_content=request.json.get("phosphorus_content", 0.0),
+
         )
         db.session.add(compost_data)
         db.session.commit()
@@ -199,4 +208,8 @@ def predict():
         )
     except Exception as e:
         db.session.rollback()  # Rollback in case of error
+        logger.error(f"Prediction error: {str(e)}")
+        # Add more detailed error logging for debugging
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
