@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # Create necessary directories if they don't exist
-RUN mkdir -p data models logs
+RUN mkdir -p data models logs results
 
 # Create a non-root user and switch to it
 RUN adduser --disabled-password --gecos '' appuser && \

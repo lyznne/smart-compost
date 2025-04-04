@@ -1,1 +1,12 @@
-g
+
+# Email address for ACME registration (ZeroSSL or Let's Encrypt)
+email emuthiani26@gmail.com
+
+# Define the site with your domain and reverse proxy
+smart-compost.localhost.com {
+    reverse_proxy app:5001 {
+        transport http {
+            versions h2c 1.1
+        }
+    }
+}
