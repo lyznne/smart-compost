@@ -174,3 +174,5 @@ sudo python [yourcode]
 or
 
 # chmod 777 /etc/wpa_supplicant/wpa_supplicant.conf
+
+homeassistant_config/

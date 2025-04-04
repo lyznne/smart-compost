@@ -111,3 +111,20 @@ If you find this project helpful, please consider giving it a star ⭐️
 <div align="center">
   <sub>Built with ❤️ by Enos Muthiani</sub>
 </div>
+
+```bash
+docker run -d \
+  --name homeassistant \
+  --privileged \
+  --restart=unless-stopped \
+  -e TZ=Africa/Nairobi \
+  -v /home/enos/Softwares/University/smart-compost/homeassistant_config:/config \
+  -v /run/dbus:/run/dbus:ro \
+  --network=host \
+  ghcr.io/home-assistant/home-assistant:stable
+  ```
+
+```json
+https://demo.home-assistant.io/#/lovelace/home
+https://www.homebiogas.com/blog/kitchen-waste-composting/
+```

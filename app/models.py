@@ -44,7 +44,7 @@ class Users(db.Model, UserMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_deleted = db.Column(db.Boolean, default=False) # soft delete
-    
+
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
             if hasattr(value, "__iter__") and not isinstance(value, str):
@@ -109,7 +109,9 @@ class Device(db.Model):
     location_region = db.Column(db.String(100), nullable=True)
     location_country = db.Column(db.String(50), nullable=True)
     wifi_connected = db.Column(db.Boolean, default=False)
-
+    is_online = db.Column(db.Boolean, default=True)  # True if online, False if offline
+    # is_deleted = db.Column(db.Boolean, default=False)  # Soft delete
+    registered_on = db.Column(db.DateTime, default=datetime.utcnow)
     user = db.relationship("Users", backref=db.backref("devices", lazy="dynamic"))
 
     def __repr__(self):
@@ -126,7 +128,7 @@ class Notification(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     read_status = db.Column(db.Boolean, default=False)
     delivery_status = db.Column(db.String(20), default="pending")   # False = unread, True = read
-
+    alert_level = db.Column(db.String(20), default="info")  # info, warning, error
     user = db.relationship("Users", backref=db.backref("notifications", lazy="dynamic"))
 
     def __repr__(self):
@@ -197,7 +199,12 @@ class CompostData(db.Model):
     temperature = db.Column(db.Float, nullable=False)  # Temperature in Celsius
     moisture = db.Column(db.Float, nullable=False)  # Moisture level in percentage
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # Timestamp of the data
-
+    ph = db.Column(db.Float, nullable=False)  # pH level
+    oxygen_level = db.Column(db.Float, nullable=False)  # Oxygen level in percentage
+    carbon_nitrogen_ratio = db.Column(db.Float, nullable=False)  # C:N ratio
+    nitrogen_content = db.Column(db.Float, nullable=False)  # Nitrogen content in percentage
+    potassium_content = db.Column(db.Float, nullable=False)  # Potassium content in percentage
+    phosphorus_content = db.Column(db.Float, nullable=False)  # Phosphorus content in percentage
     user = db.relationship("Users", backref=db.backref("compost_data", lazy="dynamic"))
 
     def __repr__(self):

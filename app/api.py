@@ -11,6 +11,8 @@ SMART COMPOST - MODEL PROJECT.
                         Copyright (c) 2025 - enos.vercel.app
 """
 
+import os
+from typing import Any
 from flask import  jsonify, Blueprint, Response
 from Models.data_setup import CompostTimeSeriesDataset
 from flask_login import current_user, login_required
@@ -24,6 +26,7 @@ import torch
 from datetime import datetime
 from Models.model import CompostLSTM
 from app.models import db, CompostData
+from app import csrf
 
 api_blueprint = Blueprint('api', __name__)
 
@@ -125,7 +128,8 @@ def train():
         return jsonify({"error": str(e)}), 500
 
 
-@api_blueprint.route('/predict', methods=["GET"])
+@api_blueprint.route("/predict", methods=["GET", "POST"])
+@csrf.exempt
 def predict():
     """
     Make predictions using the trained model and save the results to the database.
@@ -133,21 +137,29 @@ def predict():
     try:
         # Load input data from request
         input_data = request.json.get("input_data")
-        user_id = request.json.get("user_id")  # Get user_id from the request
+        user_id = request.json.get("user_id")
         if not input_data or not user_id:
             return jsonify({"error": "Input data and user_id are required"}), 400
 
         # Convert input data to tensor
         input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
 
+
         # Load the trained model
-        model = CompostLSTM(input_size=input_tensor.shape[-1])
-        model.load_state_dict(torch.load("best_compost_model.pth"))
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        MODEL_PATH = os.path.join(basedir, "..", "best_compost_model.pth")
+        model = CompostLSTM(input_size=10, hidden_size=64, num_layers=3, dropout=0.3)
+        model.load_state_dict(torch.load(MODEL_PATH))
         model.eval()
+
+
 
         # Make predictions
         with torch.no_grad():
             predictions = model(input_tensor)
+
+        # Confidence metric (optional)
+        prediction_confidence = float(torch.sigmoid(predictions).mean().item())
 
         # Extract temperature and moisture predictions
         temperature_pred = predictions[0][0].item()  # First output (temperature)
@@ -180,6 +192,7 @@ def predict():
                         "moisture": moisture_pred,
                     },
                     "status": status,
+                    "confidence": prediction_confidence,
                 }
             ),
             200,

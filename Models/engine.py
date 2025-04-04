@@ -28,6 +28,21 @@ import torch
 from datetime import datetime
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
+import pandas as pd
+
+# Visualization imports
+from .visualization import (
+    plot_training_history,
+    plot_predictions_vs_actual,
+    plot_residuals,
+    save_model_architecture,
+    plot_correlation_matrix,
+    plot_hidden_state_tsne,
+    plot_prediction_time_series,
+    plot_feature_distributions,
+    plot_feature_importance
+)
+import shutil
 
 # Load environment variables
 load_dotenv()
@@ -37,6 +52,7 @@ def train_compost_model(
     train_loader: DataLoader,
     val_loader: DataLoader,
     hyper_params: dict = None,
+    feature_names: list = None
 ) -> CompostLSTM:
     """
     Train the compost model and log metrics to Comet ML.
@@ -45,14 +61,15 @@ def train_compost_model(
         train_loader (DataLoader): DataLoader for training data.
         val_loader (DataLoader): DataLoader for validation data.
         hyper_params (dict): Dictionary of hyperparameters. Defaults to None.
+        feature_names (list): List of feature names for visualization. Defaults to None.
 
     Returns:
         CompostLSTM: Trained model.
     """
     # Default hyperparameters
     default_hyper_params = {
-        "input_size": 10,
-        "hidden_size": 64,
+        "input_size": 25,
+        "hidden_size": 256,
         "num_layers": 3,
         "dropout": 0.3,
         "learning_rate": 0.0001,
@@ -67,6 +84,10 @@ def train_compost_model(
         default_hyper_params.update(hyper_params)
     hyper_params = default_hyper_params
 
+    # Create results directories
+    results_dir = "results"
+    os.makedirs(results_dir, exist_ok=True)
+
     try:
         # Initialize Comet ML experiment
         experiment = Experiment(
@@ -74,21 +95,46 @@ def train_compost_model(
             project_name=os.getenv("SMART_COMPOST_PROJECT_NAME"),
             workspace=os.getenv("SMART_COMPOST_WORKSPACE"),
         )
+        experiment.log_parameters(hyper_params)
     except Exception as e:
         print(f"Failed to initialize Comet ML experiment: {e}")
         experiment = None
 
-    # Log hyperparameters
-    if experiment:
-        experiment.log_parameters(hyper_params)
-
     try:
-        # Calculate input size from data
+        # Calculate input size from data and analyze features
         sample_features, sample_targets = next(iter(train_loader))
         input_size = sample_features.shape[-1]  # number of features
+
+        # Extract batch of data for feature analysis
+        features_batch = sample_features.numpy().reshape(-1, input_size)
+        targets_batch = sample_targets.numpy()
+
+        # Default feature names if not provided
+        if feature_names is None:
+            feature_names = [f"Feature_{i+1}" for i in range(input_size)]
+            target_names = [f"Target_{i+1}" for i in range(sample_targets.shape[-1])]
+        else:
+            # Separate feature names and target names if provided together
+            if len(feature_names) > input_size:
+                target_names = feature_names[input_size:]
+                feature_names = feature_names[:input_size]
+            else:
+                target_names = [f"Target_{i+1}" for i in range(sample_targets.shape[-1])]
+
+        # Visualize feature distributions
+        plot_feature_distributions(features_batch, feature_names)
+
+        # Visualize correlation matrix for features
+        plot_correlation_matrix(features_batch, feature_names)
+
+        # Log visualizations to Comet ML
+        if experiment:
+            experiment.log_image("results/plots/correlation_matrix.png", name="feature_correlation")
+            experiment.log_image("results/plots/features_boxplot.png", name="feature_boxplot")
     except Exception as e:
-        print(f"Failed to calculate input size: {e}")
-        return None
+        print(f"Failed to analyze features: {e}")
+        # Fall back to default input size
+        input_size = hyper_params["input_size"]
 
     # Initialize model and trainer
     model = CompostLSTM(
@@ -98,6 +144,9 @@ def train_compost_model(
         dropout=hyper_params["dropout"],
     )
     trainer = CompostModelTrainer(model)
+
+    # Save model architecture
+    save_model_architecture(model, os.path.join(results_dir, "model_architecture.txt"))
 
     # Define optimizer and scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=hyper_params["learning_rate"])
@@ -114,6 +163,16 @@ def train_compost_model(
         gradient_clip=hyper_params["gradient_clip"],
     )
 
+    # Add learning rates to history if not already there
+    if 'learning_rates' not in history:
+        history['learning_rates'] = [
+            hyper_params["learning_rate"] * (0.1 ** (epoch // 10))
+            for epoch in range(len(history['train_losses']))
+        ]
+
+    # Generate and save training history plot
+    plot_training_history(history)
+
     # Log training and validation losses
     if experiment:
         for epoch, (train_loss, val_loss) in enumerate(
@@ -121,6 +180,10 @@ def train_compost_model(
         ):
             experiment.log_metric("train_loss", train_loss, step=epoch)
             experiment.log_metric("val_loss", val_loss, step=epoch)
+
+            # Log learning rate if available
+            if 'learning_rates' in history and epoch < len(history['learning_rates']):
+                experiment.log_metric("learning_rate", history['learning_rates'][epoch], step=epoch)
 
     # Save the best model
     model_path = "best_compost_model.pth"
@@ -168,6 +231,60 @@ def train_compost_model(
                 "gradient_norm",
             ],
         )
+
+    # Generate predictions and visualizations on validation set
+    try:
+        model.eval()
+        all_val_preds = []
+        all_val_targets = []
+        all_hidden_states = []
+
+        # Collect predictions and targets from validation set
+        with torch.no_grad():
+            for val_batch_x, val_batch_y in val_loader:
+                val_preds = model(val_batch_x)
+                all_val_preds.append(val_preds.cpu().numpy())
+                all_val_targets.append(val_batch_y.cpu().numpy())
+
+                # Collect hidden states for t-SNE visualization
+                hidden = model.get_hidden_states(val_batch_x)
+                all_hidden_states.append(hidden.cpu().numpy())
+
+        # Concatenate batches
+        all_val_preds = np.vstack(all_val_preds)
+        all_val_targets = np.vstack(all_val_targets)
+        all_hidden_states = np.vstack(all_hidden_states)
+
+        # Generate prediction vs actual and residual plots
+        plot_predictions_vs_actual(all_val_targets, all_val_preds, feature_names=target_names)
+        plot_residuals(all_val_targets, all_val_preds, feature_names=target_names)
+
+        # Generate time series prediction plots (for a subset of data)
+        max_samples = min(200, len(all_val_targets))
+        plot_prediction_time_series(
+            all_val_targets[:max_samples],
+            all_val_preds[:max_samples],
+            feature_names=target_names
+        )
+
+        # t-SNE visualization of hidden states
+        # Use prediction error as color labels
+        error_values = np.mean(np.abs(all_val_preds - all_val_targets), axis=1)
+        plot_hidden_state_tsne(all_hidden_states, labels=error_values)
+
+        # Log visualizations to Comet ML
+        if experiment:
+            # Upload all plots from the results/plots directory
+            plots_dir = "results/plots"
+            if os.path.exists(plots_dir):
+                for plot_file in os.listdir(plots_dir):
+                    if plot_file.endswith('.png'):
+                        experiment.log_image(os.path.join(plots_dir, plot_file), name=plot_file[:-4])
+
+            # Log model architecture file
+            experiment.log_asset("results/model_architecture.txt")
+    except Exception as e:
+        print(f"Failed to generate visualization: {e}")
 
     # Log 3D points using real model data
     if experiment and model:
@@ -241,209 +358,4 @@ def train_compost_model(
                 )
         except Exception as e:
             print(f"Failed to log 3D points from model data: {e}")
-            # Fall back to logging basic 3D visualization if the advanced one fails
-            try:
-                # Generate points from model weights (first 3 layers)
-                params = list(model.parameters())
-                if len(params) >= 3:
-                    weights = [
-                        p.detach().cpu().numpy().flatten()[:100] for p in params[:3]
-                    ]
-                    weights = [
-                        w / np.linalg.norm(w) if np.linalg.norm(w) > 0 else w
-                        for w in weights
-                    ]
-                    weights_array = np.array(weights).T
-
-                    # Ensure we have at least 10 points
-                    if weights_array.shape[0] < 10:
-                        weights_array = np.tile(
-                            weights_array, (10 // weights_array.shape[0] + 1, 1)
-                        )[:10]
-
-                    # Add simple coloring
-                    colors = np.zeros((weights_array.shape[0], 3))
-                    colors[:, 0] = np.linspace(
-                        0, 1, colors.shape[0]
-                    )  # Gradient coloring
-                    colors[:, 2] = np.linspace(1, 0, colors.shape[0])
-
-                    points = np.hstack((weights_array, colors))
-
-                    experiment.log_points_3d(
-                        scene_name="Model_Weights",
-                        points=points.tolist(),
-                        step=len(history["train_losses"]) - 1,
-                        metadata={
-                            "description": "Model weights visualized in 3D space"
-                        },
-                    )
-            except Exception as nested_e:
-                print(f"Failed to log fallback 3D visualization: {nested_e}")
-
-    # Save training metadata to the database
-    try:
-        training_run = TrainingRun(
-            model_name="CompostLSTM",
-            experiment_id=experiment.get_key() if experiment else None,
-            parameters=dumps(hyper_params),
-            metrics=dumps(
-                {
-                    "final_train_loss": history["train_losses"][-1],
-                    "final_val_loss": history["val_losses"][-1],
-                }
-            ),
-            status="completed",
-            start_time=datetime.utcnow(),
-            end_time=datetime.utcnow(),
-        )
-        db.session.add(training_run)
-        db.session.commit()
-    except Exception as e:
-        print(f"Failed to save training metadata to the database: {e}")
-
-    # End the experiment
-    if experiment:
-        experiment.end()
-
-    return model
-
-
-# def train_compost_model(
-#     train_loader: DataLoader,
-#     val_loader: DataLoader,
-#     hyper_params: dict = None,
-# ) -> CompostLSTM:
-#     """
-#     Train the compost model and log metrics to Comet ML.
-
-#     Args:
-#         train_loader (DataLoader): DataLoader for training data.
-#         val_loader (DataLoader): DataLoader for validation data.
-#         hyper_params (dict): Dictionary of hyperparameters. Defaults to None.
-
-#     Returns:
-#         CompostLSTM: Trained model.
-#     """
-#     # Default hyperparameters
-#     default_hyper_params = {
-#         "input_size": 10,
-#         "hidden_size": 64,
-#         "num_layers": 2,
-#         "dropout": 0.3,
-#         "learning_rate": 0.0001,
-#         "batch_size": 64,
-#         "epochs": 100,
-#         "early_stopping_patience": 15,
-#         "gradient_clip": 1.0,
-#     }
-
-#     # Use provided hyperparameters or defaults
-#     if hyper_params is not None:
-#         default_hyper_params.update(hyper_params)
-#     hyper_params = default_hyper_params
-
-#     # Initialize Comet ML experiment
-#     experiment = Experiment(
-#         api_key=os.getenv("SMART_COMPOST_COMET_API_KEY"),
-#         project_name=os.getenv("SMART_COMPOST_PROJECT_NAME"),
-#         workspace=os.getenv("SMART_COMPOST_WORKSPACE"),
-#     )
-
-#     # Log hyperparameters
-#     experiment.log_parameters(hyper_params)
-
-#     # Calculate input size from data
-#     sample_features = next(iter(train_loader))[0]
-#     input_size = sample_features.shape[-1]  # number of features
-
-#     # Initialize model and trainer
-#     model = CompostLSTM(
-#         input_size=input_size,
-#         hidden_size=hyper_params["hidden_size"],
-#         num_layers=hyper_params["num_layers"],
-#         dropout=hyper_params["dropout"],
-#     )
-#     trainer = CompostModelTrainer(model)
-
-#     # Define optimizer and scheduler
-#     optimizer = torch.optim.Adam(model.parameters(), lr=hyper_params["learning_rate"])
-#     scheduler = StepLR(optimizer, step_size=10, gamma=0.1)  # Reduce LR every 10 epochs
-
-#     # Train the model
-#     history = trainer.train(
-#         train_loader=train_loader,
-#         val_loader=val_loader,
-#         epochs=hyper_params["epochs"],
-#         early_stopping_patience=hyper_params["early_stopping_patience"],
-#         optimizer=optimizer,
-#         scheduler=scheduler,
-#         gradient_clip=hyper_params["gradient_clip"],
-#     )
-
-#     # Log training and validation losses
-#     for epoch, (train_loss, val_loss) in enumerate(
-#         zip(history["train_losses"], history["val_losses"])
-#     ):
-#         experiment.log_metric("train_loss", train_loss, step=epoch)
-#         experiment.log_metric("val_loss", val_loss, step=epoch)
-
-#     # Save the best model
-#     model_path = "best_compost_model.pth"
-#     torch.save(model.state_dict(), model_path)
-
-#     # Log the model to Comet ML
-#     log_model(experiment, model=model, model_name="CompostLSTM")
-
-#     # Log a 3D table of training metrics
-#     table_data = []
-#     for epoch, (train_loss, val_loss) in enumerate(
-#         zip(history["train_losses"], history["val_losses"])
-#     ):
-#         # Calculate learning rate for the current epoch
-#         lr = optimizer.param_groups[0]["lr"]
-
-#         # Add additional metrics (e.g., gradient norms, learning rate)
-#         table_data.append(
-#             {
-#                 "epoch": epoch + 1,
-#                 "train_loss": train_loss,
-#                 "val_loss": val_loss,
-#                 "learning_rate": lr,
-#                 "gradient_norm": history.get(
-#                     "gradient_norms", [0] * len(history["train_losses"])
-#                 )[
-#                     epoch
-#                 ],  # Log gradient norm (if available)
-#             }
-#         )
-
-#     # Log the 3D table
-#     experiment.log_table(
-#         filename="training_metrics_3d.csv",
-#         tabular_data=table_data,
-#         headers=["epoch", "train_loss", "val_loss", "learning_rate", "gradient_norm"],
-#     )
-
-#     # Save training metadata to the database
-#     training_run = TrainingRun(
-#         model_name="CompostLSTM",
-#         experiment_id=experiment.get_key(),
-#         parameters=dumps(hyper_params),
-#         metrics=dumps(
-#             {
-#                 "final_train_loss": history["train_losses"][-1],
-#                 "final_val_loss": history["val_losses"][-1],
-#             }
-#         ),
-#         status="completed",
-#         start_time=datetime.utcnow(),
-#         end_time=datetime.utcnow(),
-#     )
-#     db.session.add(training_run)
-#     db.session.commit()
-
-#     # End the experiment
-#     experiment.end()
-
-#     return model
+            # Fall back to logging

@@ -22,10 +22,13 @@ import torch.nn.functional as F
 class CompostLSTM(nn.Module):
     def __init__(
         self,
-        input_size: int,
-        hidden_size: int = 64,
-        num_layers: int = 2,
+
+        input_size: int = 25,
+        hidden_size: int = 256,
+        num_layers: int = 3,
+
         dropout: float = 0.2,
+
     ):
         super(CompostLSTM, self).__init__()
         self.hidden_size = hidden_size

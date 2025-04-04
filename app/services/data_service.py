@@ -180,3 +180,92 @@ class DataService:
             "waste_processed": 78,  # in kg
             "compost_produced": 32,  # in kg
         }
+    @staticmethod
+    def get_system_status(user_id: int) -> Dict:
+        """
+        Get comprehensive system status including sensors, devices, and alerts
+        Returns:
+            Dict: {
+                "sensors": {
+                    "temperature": float,
+                    "moisture": float,
+                    "ph": float,
+                    "last_updated": str
+                },
+                "devices": {
+                    "online": int,
+                    "offline": int,
+                    "last_communication": str
+                },
+                "alerts": {
+                    "active": int,
+                    "critical": int,
+                    "last_alert": str
+                },
+                "system": {
+                    "status": str,
+                    "uptime": str,
+                    "last_maintenance": str
+                }
+            }
+        """
+        # Get sensor data
+        latest_data = (
+            CompostData.query.filter_by(user_id=user_id)
+            .order_by(CompostData.timestamp.desc())
+            .first()
+        )
+
+        # Get device status
+        devices = Device.query.filter_by(user_id=user_id).all()
+        online_devices = [d for d in devices if d.is_online]
+
+        # Get active alerts
+        notifications = (
+            Notification.query.filter_by(user_id=user_id, read_status=False)
+            .order_by(Notification.timestamp.desc())
+            .all()
+        )
+        critical_alerts = [n for n in notifications if n.alert_level == "critical"]
+
+        # Get last maintenance activity
+        last_maintenance = (
+            ActivityLog.query.filter_by(
+                user_id=user_id,
+                activity_type="Maintenance"
+            )
+            .order_by(ActivityLog.timestamp.desc())
+            .first()
+        )
+
+        return {
+            "sensors": {
+                "temperature": latest_data.temperature if latest_data else 0.0,
+                "moisture": latest_data.moisture if latest_data else 0.0,
+                "ph": latest_data.ph if latest_data else 0.0,
+                "last_updated": latest_data.timestamp.isoformat() if latest_data else "Never"
+            },
+            "devices": {
+                "total": len(devices),
+                "online": len(online_devices),
+                "offline": len(devices) - len(online_devices),
+                "last_communication": max(
+                    [d.last_seen for d in devices],
+                    default=datetime.min
+                ).isoformat()
+            },
+            "alerts": {
+                "total": len(notifications),
+                "active": len(notifications),
+                "critical": len(critical_alerts),
+                "last_alert": notifications[0].timestamp.isoformat() if notifications else "None"
+            },
+            "system": {
+                "status": "Normal" if not critical_alerts else "Warning",
+                "uptime": str(datetime.now() - min(
+                    [d.registered_on for d in devices],
+                    default=datetime.now()
+                )),
+                "last_maintenance": last_maintenance.timestamp.isoformat() if last_maintenance else "Never"
+            }
+        }

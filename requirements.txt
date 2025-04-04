@@ -73,8 +73,6 @@ sentry-sdk==2.22.0
 service-identity==24.1.0
 setuptools==75.8.0
 simple-websocket==1.1.0
-
-
 SQLAlchemy==2.0.37
 sqlparse==0.5.1
 tensorboard==2.18.0
@@ -83,13 +81,8 @@ tensorflow==2.18.0
 termcolor==2.5.0
 threadpoolctl==3.5.0
 toml==0.10.2
-
 tornado==6.4.1
-
-
-
 ua-parser==1.0.1
 urllib3==2.2.3
 user-agents==2.2.0
-
 Werkzeug==3.1.3

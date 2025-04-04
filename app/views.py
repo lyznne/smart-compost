@@ -23,15 +23,169 @@ from app import login_manager
 from app.models import Users, ActivityLog, Device, Notification
 from app.util import get_client_ip, register_device
 from flask import request
-from app.models  import db
+from app.models import db
 from app import logger
 import psutil
 import os
 import torch
+import json
+import threading
+import paho.mqtt.client as mqtt
+from datetime import datetime
 
 # Define the blueprint for routes
 blueprint = Blueprint("app", __name__)
 auth_blueprint = Blueprint("auth", __name__)
+
+# MQTT Configuration
+MQTT_BROKER = "mqtt.broker.com"  # Update with your actual broker address
+MQTT_PORT = 1883
+MQTT_TOPICS = ["compost/sensors", "compost/status", "compost/alerts"]
+mqtt_client = None
+latest_sensor_data = {
+    "temperature": None,
+    "moisture": None,
+    "pH": None,
+    "timestamp": None
+}
+
+# MQTT Callbacks
+def on_connect(client, userdata, flags, rc):
+    """Handle connection to MQTT broker"""
+    if rc == 0:
+        logger.info("Connected to MQTT broker")
+        # Subscribe to all monitoring topics
+        for topic in MQTT_TOPICS:
+            client.subscribe(topic)
+            logger.info(f"Subscribed to {topic}")
+    else:
+        logger.error(f"Failed to connect to MQTT broker with result code {rc}")
+
+def on_message(client, userdata, message):
+    """Process incoming MQTT messages"""
+    topic = message.topic
+    try:
+        payload = json.loads(message.payload.decode())
+        logger.info(f"Received message on topic {topic}: {payload}")
+
+        # Process based on topic
+        if topic == "compost/sensors":
+            # Update latest sensor data
+            global latest_sensor_data
+            latest_sensor_data = {
+                "temperature": payload.get("temperature"),
+                "moisture": payload.get("moisture"),
+                "pH": payload.get("pH", None),
+                "timestamp": datetime.now()
+            }
+
+            # Store in database if user_id is provided
+            if "user_id" in payload and payload["user_id"]:
+                DataService.store_sensor_reading(
+                    user_id=payload["user_id"],
+                    temperature=payload.get("temperature"),
+                    moisture=payload.get("moisture"),
+                    pH=payload.get("pH", None)
+                )
+
+            # Check for alert conditions
+            check_alert_conditions(payload)
+
+        elif topic == "compost/status":
+            # Process status updates
+            if "user_id" in payload and "status" in payload:
+                DataService.update_compost_status(
+                    user_id=payload["user_id"],
+                    status=payload["status"]
+                )
+
+        elif topic == "compost/alerts":
+            # Process explicit alerts
+            if "user_id" in payload and "message" in payload:
+                NotificationManager.create_notification(
+                    user_id=payload["user_id"],
+                    message=payload["message"],
+                    alert_level=payload.get("level", "info")
+                )
+
+    except json.JSONDecodeError:
+        logger.error(f"Failed to parse MQTT payload: {message.payload}")
+    except Exception as e:
+        logger.error(f"Error processing MQTT message: {str(e)}")
+
+def check_alert_conditions(sensor_data):
+    """Check if sensor data requires alerts"""
+    if "user_id" not in sensor_data:
+        return
+
+    user_id = sensor_data["user_id"]
+
+    # Example alert conditions - customize based on your requirements
+    if "temperature" in sensor_data:
+        temp = sensor_data["temperature"]
+        if temp > 65:  # Too hot
+            NotificationManager.create_notification(
+                user_id=user_id,
+                message=f"High temperature alert: {temp}°C",
+                alert_level="warning"
+            )
+        elif temp < 20:  # Too cold
+            NotificationManager.create_notification(
+                user_id=user_id,
+                message=f"Low temperature alert: {temp}°C",
+                alert_level="warning"
+            )
+
+    if "moisture" in sensor_data:
+        moisture = sensor_data["moisture"]
+        if moisture < 30:  # Too dry
+            NotificationManager.create_notification(
+                user_id=user_id,
+                message=f"Low moisture alert: {moisture}%",
+                alert_level="warning"
+            )
+        elif moisture > 70:  # Too wet
+            NotificationManager.create_notification(
+                user_id=user_id,
+                message=f"High moisture alert: {moisture}%",
+                alert_level="warning"
+            )
+
+def start_mqtt_client():
+    """Initialize and start MQTT client in a separate thread"""
+    global mqtt_client
+
+    try:
+        # Create new MQTT client
+        mqtt_client = mqtt.Client()
+
+        # Set callbacks
+        mqtt_client.on_connect = on_connect
+        mqtt_client.on_message = on_message
+
+        # Connect to broker
+        mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+
+        # Start MQTT loop in a separate thread
+        mqtt_thread = threading.Thread(target=mqtt_client.loop_forever)
+        mqtt_thread.daemon = True  # Thread will close when main application stops
+        mqtt_thread.start()
+
+        logger.info("MQTT client started successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to start MQTT client: {str(e)}")
+        return False
+
+# Initialize MQTT client when application starts
+def init_mqtt():
+    """Initialize MQTT client when Flask app starts"""
+    success = start_mqtt_client()
+    if not success:
+        logger.warning("MQTT client initialization failed. Sensor data may not be available.")
+
+# Call init_mqtt when this module is imported
+init_mqtt()
 
 
 # Home route
@@ -48,6 +202,12 @@ def home():
     connected_devices = DataService.get_connected_devices(current_user.id)
     wifi_connected = DataService.get_wifi_status(current_user.id)
     current_time = DataService.get_current_time()
+
+    # Include latest sensor data if available
+    if latest_sensor_data["temperature"] is not None:
+        compost_data["temperature"] = latest_sensor_data["temperature"]
+    if latest_sensor_data["moisture"] is not None:
+        compost_data["moisture"] = latest_sensor_data["moisture"]
 
     return render_template(
         "app/index.html",
@@ -195,83 +355,6 @@ def wifi():
         )
 
 
-# @blueprint.route("/wifi", methods=["GET", "POST"])
-# @login_required
-# def wifi():
-#     """
-#     WIFI Route ...
-#     """
-#     if request.method == "POST":
-#         """Connect to a specific WIFI connection."""
-#         data = request.get_json()
-#         ssid = data.get("ssid")
-#         password = data.get("password")
-
-#         if not ssid:
-#             flash("Network name is required", "error")
-#             return redirect(url_for("app.wifi"))
-
-#         try:
-#             network_manager = NetworkManager()
-#             connection_result = network_manager.connect_to_network(ssid, password)
-
-#             if connection_result:
-#                 # Get current connection details
-#                 connection_details = network_manager.get_current_connection()
-
-#                 # Log network connection activity
-#                 activity = ActivityLog(
-#                     user_id=current_user.id,
-#                     activity_type="Network Connection",
-#                     ip_address=request.remote_addr,
-#                     user_agent=request.headers.get("User-Agent"),
-#                 )
-#                 db.session.add(activity)
-
-#                 # Update or create device record
-#                 device = Device.query.filter_by(
-#                     user_id=current_user.id, device_type="network"
-#                 ).first()
-#                 if not device:
-#                     device = Device(
-#                         user_id=current_user.id,
-#                         device_name="WiFi Interface",
-#                         device_ip=connection_details["ip_address"],
-#                         device_type="network",
-#                     )
-#                     db.session.add(device)
-#                 else:
-#                     device.device_ip = connection_details["ip_address"]
-#                     device.last_seen = datetime.utcnow()
-
-#                 db.session.commit()
-#                 flash("Connected successfully", "success")
-#                 return redirect(url_for("app.wifi"))
-#             else:
-#                 flash("Error connecting to network.", "error")
-#                 return redirect(url_for("app.wifi"))
-#         except pywifi.PyWiFiError as e:
-#             flash(f"WiFi error: {str(e)}", "error")
-#             return redirect(url_for("app.wifi"))
-#         except Exception as e:
-#             flash(f"An unexpected error occurred: {str(e)}", "error")
-#             return redirect(url_for("app.wifi"))
-
-#     elif request.method == "GET":
-#         try:
-#             network_manager = NetworkManager()
-#             networks = network_manager.scan_networks()
-#             return render_template(
-#                 "app/index.html",
-#                 user=current_user,
-#                 active_tab="wifi",
-#                 networks=networks,
-#             )
-#         except Exception as e:
-#             flash("Try refreshing your network again.", "warning")
-#             return render_template("app/index.html", user=current_user)
-
-
 # STATS
 @blueprint.route("/stats", methods=["GET", "POST"])
 @login_required
@@ -333,6 +416,9 @@ def health_check():
     # Check socketio status
     socketio_status = 'active' if hasattr(current_app, 'socketio') else 'inactive'
 
+    # Check MQTT client status
+    mqtt_status = 'connected' if mqtt_client and mqtt_client.is_connected() else 'disconnected'
+
     return jsonify({
         'status': 'ok',
         'service': 'smart_compost',
@@ -345,6 +431,7 @@ def health_check():
         },
         'database': db_status,
         'socketio': socketio_status,
+        'mqtt': mqtt_status,
         'gpu': gpu_info if gpu_available else 'not available'
     }), 200
 
@@ -395,8 +482,6 @@ def profile():
         # Save changes to the database
         db.session.commit()
 
-
-
         return redirect(url_for("app.profile"))
 
     return render_template(
@@ -411,6 +496,77 @@ def profile():
         current_time=current_time,
         active_tab="profile",
         device=primary_device,
+    )
+
+@blueprint.route("/control", methods=["GET", "POST"])
+@login_required
+def control_system():
+    """
+    Route for manual control of compost system components
+    """
+    if request.method == "POST":
+        action = request.form.get("action")
+        if not action:
+            flash("No action specified", "error")
+            return redirect(url_for("app.control_system"))
+
+        # Validate MQTT connection
+        if not mqtt_client or not mqtt_client.is_connected():
+            flash("MQTT connection unavailable, cannot send commands", "error")
+            return redirect(url_for("app.control_system"))
+
+        try:
+            # Prepare command payload
+            command = {
+                "user_id": current_user.id,
+                "action": action,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add additional parameters if present
+            if "duration" in request.form:
+                command["duration"] = int(request.form.get("duration", 0))
+
+            if "target" in request.form:
+                command["target"] = request.form.get("target")
+
+            # Send command via MQTT
+            mqtt_client.publish("compost/commands", json.dumps(command))
+
+            # Log the action
+            activity = ActivityLog(
+                user_id=current_user.id,
+                activity_type="System Control",
+                details=f"Manual action: {action}",
+                ip_address=get_client_ip(request),
+                user_agent=request.headers.get("User-Agent")
+            )
+            db.session.add(activity)
+            db.session.commit()
+
+            flash(f"Command '{action}' sent successfully", "success")
+
+        except Exception as e:
+            logger.error(f"Error sending command: {str(e)}")
+            flash(f"Error sending command: {str(e)}", "error")
+
+    # Get current system status
+    system_status = DataService.get_system_status(current_user.id)
+
+    # Get available control actions
+    control_actions = [
+        {"name": "mix", "label": "Mix Compost", "icon": "mdi:rotate-3d"},
+        {"name": "water", "label": "Add Water", "icon": "mdi:water"},
+        {"name": "aerate", "label": "Aerate", "icon": "mdi:fan"},
+        {"name": "harvest", "label": "Harvest", "icon": "mdi:shovel"}
+    ]
+
+    return render_template(
+        "app/control.html",  # You'll need to create this template
+        user=current_user,
+        active_tab="control",
+        system_status=system_status,
+        control_actions=control_actions
     )
 
 # Login route
