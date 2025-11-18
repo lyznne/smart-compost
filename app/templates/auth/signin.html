@@ -1,0 +1,62 @@
+{% extends 'layouts/base-fullscreen.html' %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/signin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="signin-body" id="signin">
+    <div class="container">
+        <div class="form-container">
+            <!-- header  -->
+            <div class="header">
+                <div class="header-text">
+                    <h1>SMART COMPOST <i class="fas fa-leaf"></i> </h1>
+                    <p>Building a sustainable future together!</p>
+                </div>
+            </div>
+
+            <!-- end header  -->
+
+            <div class="form-card">
+                <form action="{{ url_for('auth.signin') }}" method="POST" class="form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i>
+                        </label>
+                        <input name="email" autocomplete="off" id="email" type="email" placeholder=" email address ..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <input required autocomplete="off" name="password" id="password" type="password" placeholder="passcode ...">
+                        <label for="password">
+                            <i class="fas fa-lock"></i>
+                        </label>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input name="remember" type="checkbox">
+                            <div class="checkmark"></div>
+                            remember me
+                        </label>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="form-submit-btn">sign In</button>
+                </form>
+                <p class="form-card-footer">Connect to <a href="{{ url_for('auth.signup') }}">smart compost</a></p>
+            </div>
+
+
+        </div>
+
+    </div>
+
+    <!-- footer  -->
+    {% include 'includes/footer.html' %}
+</div>
+{% endblock %}

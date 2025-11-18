@@ -1,0 +1,38 @@
+<!--
+
+SMART COMPOST - MODEL PROJECT.
+
+---   Error pages layout file
+
+* Author  -  enos muthiani
+* git     -  https://github.com/lyznne
+* date    - 2 Mar 2024
+* email   - emuthiani26@gmail.com
+
+
+                                    Copyright (c) 2025      - enos.vercel.app
+
+ -->
+
+
+<!DOCTYPE html>
+<html lang="en"> 
+
+    <head>
+        {% include "includes/meta.html" %}
+        <title>Error {{ error_code }}</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/error.css') }}">
+    </head>
+
+    <body>
+        <div class="body">
+            <div class="auth-error-container">
+                <h1 class="error-title">{{ error_code }}</h1>
+                <p class="error-message">{{ message }}</p>
+                <a href="{{ url_for('app.home')}}" class="btn-home">Return Home</a>
+            </div>
+        </div>
+        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    </body>
+
+</html>

@@ -1,0 +1,25 @@
+<div id="flash-messages">
+    <ul class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <li class="flash-message {{ category }}">
+                        <div class="message-icon">
+                            {% if category == 'success' %}
+                                <i class="fas fa-check-circle"></i>
+                            {% elif category == 'error' %}
+                                <i class="fas fa-exclamation-circle"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle"></i>
+                            {% endif %}
+                        </div>
+                        <span>{{ message }}</span>
+                        <button class="close-btn" onclick="this.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </li>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </ul>
+</div>

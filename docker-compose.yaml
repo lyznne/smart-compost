@@ -1,0 +1,51 @@
+services:
+  # Flask application service with Socket.IO
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-compost-app
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - DATABASE_URI=mysql+pymysql://compost_user:${MYSQL_PASSWORD}@mysql-database:3306/smart_compost
+      - SMART_COMPOST_COMET_API_KEY=${SMART_COMPOST_COMET_API_KEY}
+      - SMART_COMPOST_PROJECT_NAME=${SMART_COMPOST_PROJECT_NAME}
+      - SMART_COMPOST_WORKSPACE=${SMART_COMPOST_WORKSPACE}
+      - TRAIN_MODEL=${TRAIN_MODEL:-false}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    extra_hosts:
+      - "mysql-database:172.17.0.2"  # Map to existing MySQL container
+    ports:
+      - "5001:5000"
+    networks:
+      - smart-compost-network
+
+  # Caddy web server service with WebSocket support
+  caddy:
+    image: caddy:2.6-alpine
+    container_name: smart-compost-caddy
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    networks:
+      - smart-compost-network
+
+volumes:
+  caddy-data:
+  caddy-config:
+
+networks:
+  smart-compost-network:
+    driver: bridge

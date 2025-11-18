@@ -1,0 +1,63 @@
+<div class="space-y-6">
+{% include 'includes/user-greeting.html' %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3 class="card-title">Compost Status</h3>
+            <div class="stat-content">
+                <div class="stat-value {{ 'green' if compost_status == 'Optimal' else 'red' }}">
+                    {{ compost_status }}
+                </div>
+                <div class="stat-icon leaf-bg">
+                    <i class="fas fa-leaf"></i>
+                </div>
+            </div>
+            <p class="stat-description">{{ compost_status }} conditions</p>
+        </div>
+
+        <div class="stat-card">
+            <h3 class="card-title">Temperature</h3>
+            <div class="stat-content">
+                <div class="stat-value {{ 'orange' if temperature > 25 else 'green' }}">
+                    {{ temperature }}°C
+                </div>
+                <div class="stat-icon orange-bg">
+                    <i class="fas fa-thermometer-half"></i>
+                </div>
+            </div>
+            <p class="stat-description">
+                {{ "Above optimal range" if temperature > 25 else "Within optimal range" }}
+            </p>
+        </div>
+
+        <div class="stat-card">
+            <h3 class="card-title">Moisture</h3>
+            <div class="stat-content">
+                <div class="stat-value {{ 'green' if moisture >= 60 else 'red' }}">
+                    {{ moisture }}%
+                </div>
+                <div class="stat-icon green-bg">
+                    <i class="fas fa-tint"></i>
+                </div>
+            </div>
+            <p class="stat-description">
+                {{ "Good moisture level" if moisture >= 60 else "Low moisture level" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="activity-card">
+        <h3 class="card-title">Recent Activity</h3>
+        <div class="activity-list">
+            {% for activity in recent_activity %}
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div>
+                    <p class="activity-text">{{ activity.text }}</p>
+                    <p class="activity-time">{{ activity.time }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

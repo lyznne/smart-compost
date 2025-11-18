@@ -1,0 +1,77 @@
+<div class="space-y-6">
+    <h2 class="section-title">Compost Analytics</h2>
+
+    <!-- Temperature History Chart -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3 class="card-title">Temperature History</h3>
+            <div class="chart temperature-chart">
+                {% for entry in temperature_history %}
+                <div class="chart-bar" style="height: {{ entry.temperature }}%;" data-temp="{{ entry.temperature }}">
+                    <span class="chart-label">{{ entry.day }}</span>
+                    <span class="chart-value">{{ entry.temperature }}°C</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Moisture History Chart -->
+        <div class="chart-card">
+            <h3 class="card-title">Moisture History</h3>
+            <div class="chart moisture-chart">
+                {% for entry in moisture_history %}
+                <div class="chart-bar" style="height: {{ entry.moisture }}%;" data-moisture="{{ entry.moisture }}">
+                    <span class="chart-label">{{ entry.day }}</span>
+                    <span class="chart-value">{{ entry.moisture }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Compost Maturity Card -->
+    <div class="maturity-card">
+        <h3 class="card-title">Compost Maturity</h3>
+        <div class="maturity-container">
+            <div class="maturity-header">
+                <div>
+                    <span class="maturity-percent">{{ compost_maturity.percent_complete }}% Complete</span>
+                </div>
+                <div>
+                    <span class="maturity-estimate">Estimated completion: {{ compost_maturity.estimated_completion
+                        }}</span>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: {{ compost_maturity.percent_complete }}%"></div>
+            </div>
+            <div class="maturity-stages">
+                {% for stage in compost_maturity.stages %}
+                <span>{{ stage }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Environmental Impact Card -->
+    <div class="impact-card">
+        <h3 class="card-title">Environmental Impact</h3>
+        <div class="impact-grid">
+            <div class="impact-item">
+                <h4 class="impact-label">CO₂ Reduction</h4>
+                <p class="impact-value green">{{ environmental_impact.co2_reduction }} kg</p>
+                <p class="impact-description">Carbon diverted from landfill</p>
+            </div>
+            <div class="impact-item">
+                <h4 class="impact-label">Waste Processed</h4>
+                <p class="impact-value orange">{{ environmental_impact.waste_processed }} kg</p>
+                <p class="impact-description">Organic waste composted</p>
+            </div>
+            <div class="impact-item">
+                <h4 class="impact-label">Compost Produced</h4>
+                <p class="impact-value green">{{ environmental_impact.compost_produced }} kg</p>
+                <p class="impact-description">Rich soil amendment created</p>
+            </div>
+        </div>
+    </div>
+</div>

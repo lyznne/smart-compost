@@ -1,0 +1,32 @@
+<div class="user-greeting-section">
+    <div class="greeting-header">
+        <div class="greeting-text">
+            <h2 class="section-title">
+                {% set current_hour = current_time.hour %}
+                {% if current_hour < 12 %} Good morning, {% elif current_hour < 17 %} Good afternoon, {% else %} Good
+                    evening, {% endif %} <span class="user-name">{{ user.first_name }}</span>
+            </h2>
+            <p class="greeting-date">{{ current_time.strftime('%A, %B %d, %Y') }}</p>
+        </div>
+        <div class="system-status">
+            <div class="status-item">
+                <i class="fas fa-bell"></i>
+                <span class="status-count">{{ notifications|length }}</span>
+                <span class="status-label">Notifications</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-wifi {{ 'text-green' if wifi_connected else 'text-red' }}"></i>
+                <span class="status-label">{{ 'Connected' if wifi_connected else 'Disconnected' }}</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-microchip"></i>
+                <span class="status-label">Device ID: {{ device.id }}</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-tablet-alt"></i>
+                <span class="status-count">{{ connected_devices|length }}</span>
+                <span class="status-label">Connected Devices</span>
+            </div>
+        </div>
+    </div>
+</div>

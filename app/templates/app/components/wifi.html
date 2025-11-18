@@ -1,0 +1,49 @@
+<div class="space-y-6">
+    <h2 class="section-title">Network Settings</h2>
+
+    <div class="config-card">
+        <h3 class="card-title">Available Networks</h3>
+
+        <div class="networks-list">
+            {% for network in networks %}
+            <div class="network-item">
+                <div class="network-info">
+                    <i class="fas fa-wifi network-icon"></i>
+                    <div>
+                        <p class="network-name">{{ network.ssid }}</p>
+                        <div class="network-details">
+                            <span>{{ network.signal_quality }}</span>
+                            {% if network.security != "Open" %}
+                            <span class="secured">• {{ network.security }} <i class="fas fa-lock"></i></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-sm connect-btn" data-ssid="{{ network.ssid }}">Connect</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".connect-btn").forEach(button => {
+            button.addEventListener("click", function () {
+                let ssid = this.getAttribute("data-ssid");
+                let password = prompt("Enter password (if required):");
+
+                fetch("/wifi", {
+                    method: "POST",
+                    body: JSON.stringify({ "ssid": ssid, "password": password }),
+                    headers: { "Content-Type": "application/json" }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message || data.error);
+                        location.reload();
+                    });
+            });
+        });
+    });
+</script>

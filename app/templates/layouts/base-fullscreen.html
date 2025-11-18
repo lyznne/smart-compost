@@ -1,0 +1,44 @@
+<!--
+
+SMART COMPOST - MODEL PROJECT.
+
+---   base layout file
+
+* Author  -  enos muthiani
+* git     -  https://github.com/lyznne
+* date    - 22 Nov 2024
+* email   - emuthiani26@gmail.com
+
+
+                                    Copyright (c) 2024      - enos.vercel.app
+
+ -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        {% include "includes/meta.html" %}
+        <!-- specific css goes here  -->
+        {% block stylesheets %}
+        {% endblock stylesheets %}
+    </head>
+
+    <body data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}">
+        <div class="body">
+            {% include 'includes/flash-messages.html' %}
+            {% block content %}
+<!-- content here  -->
+            {% endblock %}
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+
+        {% block javascripts %}
+
+        {% endblock %}
+    </body>
+
+</html>

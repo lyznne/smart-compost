@@ -1,0 +1,171 @@
+# Home Assistant Configuration for Smart Compost System
+homeassistant:
+  name: Smart Compost
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: !secret elevation
+  unit_system: metric
+  time_zone: Africa/Nairobi
+  external_url: "http://localhost:8123"
+
+# MQTT Configuration
+mqtt:
+  # broker: !secret mqtt_broker
+  # port: !secret mqtt_port
+  # username: !secret mqtt_username
+  # password: !secret mqtt_password
+  # discovery: true
+  # keepalive: 60
+
+  # Sensors
+  sensor:
+    - name: "Compost Temperature"
+      unique_id: "compost_temperature"
+      state_topic: "compost/sensors"
+      value_template: "{{ value_json.temperature }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      availability_topic: "compost/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      expire_after: 300  # 5 minutes
+
+    - name: "Compost Moisture"
+      unique_id: "compost_moisture"
+      state_topic: "compost/sensors"
+      value_template: "{{ value_json.moisture }}"
+      unit_of_measurement: "%"
+      device_class: humidity
+      availability_topic: "compost/status"
+
+    - name: "Compost pH"
+      unique_id: "compost_ph"
+      state_topic: "compost/sensors"
+      value_template: "{{ value_json.pH }}"
+      unit_of_measurement: "pH"
+      icon: mdi:ph
+
+    - name: "Compost System Status"
+      unique_id: "compost_system_status"
+      state_topic: "compost/status"
+      value_template: "{{ value_json.status }}"
+
+# Binary Sensors
+binary_sensor:
+  - platform: template
+    sensors:
+      compost_too_hot:
+        friendly_name: "Compost Too Hot"
+        value_template: "{{ states('sensor.compost_temperature') | float > 65 }}"
+        device_class: heat
+
+      compost_too_dry:
+        friendly_name: "Compost Too Dry"
+        value_template: "{{ states('sensor.compost_moisture') | float < 30 }}"
+        device_class: moisture
+
+# Inputs for Configuration
+input_number:
+  target_moisture:
+    name: "Target Moisture Level"
+    min: 30
+    max: 70
+    step: 5
+    initial: 50
+    unit_of_measurement: "%"
+
+input_datetime:
+  compost_start_date:
+    name: "Compost Start Date"
+    has_date: true
+    has_time: false
+
+# Automations
+automation:
+  - alias: "High Temperature Alert"
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.compost_temperature
+      above: 65
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "🌡️ Compost Too Hot!"
+          message: "Temperature is {{ states('sensor.compost_temperature') }}°C. Consider turning the pile."
+      - service: mqtt.publish
+        data:
+          topic: "compost/commands"
+          payload: '{"action": "alert", "type": "temperature", "value": {{ states("sensor.compost_temperature") }}}'
+
+  - alias: "Low Moisture Alert"
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.compost_moisture
+      below: 30
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "💧 Compost Too Dry!"
+          message: "Moisture is {{ states('sensor.compost_moisture') }}%. Add water."
+      - service: mqtt.publish
+        data:
+          topic: "compost/commands"
+          payload: '{"action": "alert", "type": "moisture", "value": {{ states("sensor.compost_moisture") }}}'
+
+  - alias: "Optimal Conditions Notification"
+    trigger:
+      platform: and
+      conditions:
+        - condition: numeric_state
+          entity_id: sensor.compost_temperature
+          above: 40
+          below: 60
+        - condition: numeric_state
+          entity_id: sensor.compost_moisture
+          above: 40
+          below: 60
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "✅ Optimal Conditions"
+          message: "Temperature: {{ states('sensor.compost_temperature') }}°C, Moisture: {{ states('sensor.compost_moisture') }}%"
+
+# Scripts
+script:
+  turn_on_mixer:
+    alias: "Turn On Compost Mixer"
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "compost/commands"
+          payload: '{"action": "mix", "duration": 30}'
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.last_mix
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
+
+lovelace:
+
+  mode: yaml
+  resources:
+    - url: /local/compost-card.js
+      type: module
+  dashboards:
+    lovelace-compost:
+      mode: yaml
+      title: Smart Compost
+      icon: mdi:compost
+      show_in_sidebar: true
+      filename: dashboards/compost.yaml
+
+# Include additional configuration files
+default_config:
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+frontend:
+  themes: !include_dir_merge_named themes

@@ -1,0 +1,41 @@
+
+
+#home .home-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+
+}
+
+.home-container .center {
+    margin-top: var(--padd-xxl);
+    display: flex;
+    align-items: center;
+    width: 80%;
+
+    gap: var(--padd-xxl);
+}
+
+.home-container .main-body {
+    flex: 1;
+    background: var(--card-bg);
+    backdrop-filter: Blur(2px);
+    border: .5px solid rgba(48, 184, 82, 0.2);
+    padding: var(--padd-sm) var(--padd-md);
+    border-radius: var(--border-radius);
+
+    outline: 2px solid var(--card-bg);
+}
+
+.home-container aside {
+    flex: .25;
+    background: var(--card-bg);
+    backdrop-filter: Blur(2px);
+    border: .5px solid rgba(48, 184, 82, 0.2);
+    padding: var(--padd-sm) var(--padd-md);
+    border-radius: var(--border-radius);
+    outline: 2px solid var(--card-bg);
+}
+
