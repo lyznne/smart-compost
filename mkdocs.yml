@@ -59,6 +59,7 @@ markdown_extensions:
       permalink: true
   - tables
   - attr_list
+  - md_in_html
   - def_list
   - footnotes
   - pymdownx.superfences
@@ -106,6 +107,7 @@ nav:
       - Dependencies: dependencies.md
       - Training Process: learn.md
       - Model Architecture: model.md
+      - Evaluation & Results: results.md
   - Web App & Integration:
       - Flask App: app.md
       - Home Assistant Integration: app.md
