@@ -55,7 +55,12 @@ Smart Compost is an intelligent composting system that uses machine learning to 
    http://localhost:5000
    ```
 
-## 📚 Documentation
+6. **Documentation**
+   ```bash
+      mkdocs serve
+   ```
+
+## 📚 [Documentation](https://lyznne.github.io/smart-compost/)
 
 Detailed documentation is available in the following sections:
 
