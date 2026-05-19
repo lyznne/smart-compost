@@ -31,11 +31,11 @@ class NotificationManager:
         db.session.add(notification)
         db.session.commit()
 
-        # ✅ Send WebSocket notification if it's a "web" notification
+        # Send WebSocket notification if it's a "web" notification
         if channel == "web":
             NotificationManager.send_web_notification(user_id, message)
 
-        # ✅ Send via other channels if applicable
+        # Send via other channels if applicable
         elif channel in ["email", "push", "sms"]:
             NotificationManager.send_notification(notification)
 
