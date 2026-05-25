@@ -16,9 +16,10 @@ from random import shuffle
 from Models.data_setup import CompostTimeSeriesDataset
 from Models.engine import train_compost_model
 from app import create_app, socketio
-from app.config import  DevelopmentConfig
+from app.config import  DevelopmentConfig, ProductionConfig
 from torch.utils.data import DataLoader
 import torch
+import os
 
 
 # ---

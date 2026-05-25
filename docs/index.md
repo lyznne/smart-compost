@@ -1,16 +1,26 @@
 <div align="center">
 
-# ✨ Smart Compost ✨
+<h1>✨ Smart Compost ✨</h1>
 
-<img src="app/static/assets/logo.svg" alt="Smart Compost Logo" width="180" height="180"/>
+<img src="assets/logo.svg" alt="Smart Compost Logo" width="180" height="180"/>
 
-🌿 Building a sustainable future together
+<p>🌿 <strong>Building a sustainable future together</strong></p>
 
-[![Python](https://img.shields.io/badge/python-3.12-green.svg)](https://www.python.org)
-[![Flask](https://img.shields.io/badge/flask-2.3.3-black.svg)](https://flask.palletsprojects.com)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p>
+<a href="https://www.python.org">
+    <img src="https://img.shields.io/badge/python-3.12-green.svg" alt="Python">
+</a>
+<a href="https://flask.palletsprojects.com">
+    <img src="https://img.shields.io/badge/flask-2.3.3-black.svg" alt="Flask">
+</a>
+<a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+</a>
+</p>
 
 </div>
+
+
 
 ## 🚀 Overview
 
@@ -55,20 +65,16 @@ Smart Compost is an intelligent composting system that uses machine learning to 
    http://localhost:5000
    ```
 
-6. **Documentation**
-   ```bash
-      mkdocs serve
-   ```
-
-## 📚 [Documentation](https://lyznne.github.io/smart-compost/)
+## 📚 Documentation
 
 Detailed documentation is available in the following sections:
 
-- [Getting Started](./docs/get-started.md) - Setup guide and basic usage
-- [Datasets](./docs/dataset.md) - All Datasets structures for the Compost Model
-- [Dependencies](./docs/dependencies.md) - Project dependencies and requirements
-- [Machine Learning Model](./docs/model.md) - ML model architecture and training
-- [Learn More](./docs/learn.md) - Advanced topics and best practices
+- [Getting Started](./dependencies.md) - Setup guide and basic usage
+- [Datasets](./dataset.md) - All Datasets structures for the Compost Model
+- [Dependencies](./dependencies.md) - Project dependencies and requirements
+- [Machine Learning Model](./model.md) - ML model architecture and training
+- [Home Assistance & Flak App Web App](./app.md) - Intergration of the Model with Flask and  Home Assistance.
+- [Learn More](./learn.md) - Advanced topics and best practices
 
 ## 🏗️ Project Structure
 

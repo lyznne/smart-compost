@@ -1,0 +1,116 @@
+site_name: ✨ Smart Compost ✨
+description: Smart Compost is an intelligent composting system that uses machine learning to optimize the composting process.
+site_url: https://lyznne.github.io/smart-docs/
+site_author: lyznne
+
+repo_url: https://github.com/lyznne/smart-compost.git
+repo_name: smart-compost
+edit_uri: smart-docs/
+
+site_dir: docs_site
+
+theme:
+  name: material
+  language: en
+  user_color_mode_toggle: true
+
+  favicon: assets/favicon.ico
+  logo: assets/logo.svg
+  features:
+      - navigation.instant
+      - navigation.tabs
+      - navigation.sections
+      - navigation.top
+      - toc.integrate
+      - content.code.copy
+      - content.code.annotate
+      - content.tabs.link
+      - search.highlight
+      - search.share
+      - content.action.edit
+      - content.action.view
+      - navigation.footer
+
+  palette:
+      # Light mode (default)
+      - scheme: default
+        primary: green  # or "emerald" (Material v9+)
+        accent: teal    # or "light green" for a brighter accent
+        toggle:
+          icon: material/weather-night
+          name: Switch to dark mode
+
+      # Dark mode (slate)
+      - scheme: slate
+        primary: green  # or "deep green"
+        accent: teal    # or "lime" for contrast
+        toggle:
+          icon: material/weather-sunny
+          name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - tables
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      linenums: true
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.snippets
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      fallback_to_build_date: true
+      locale: en
+  - awesome-pages
+  - minify:
+      minify_html: true
+  - glightbox
+
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/smart-compost
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/en_lyznne
+  generator: false
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Introduction: get-started.md
+  - Datasets:
+      - Types of Data: dataset.md
+  - Model Training:
+      - Dependencies: dependencies.md
+      - Training Process: learn.md
+      - Model Architecture: model.md
+      - Evaluation & Results: results.md
+  - Web App & Integration:
+      - Flask App: app.md
+      - Home Assistant Integration: app.md
+  - API Documentation:
+      - Model Training API: app.md
+  - Model: Model.md

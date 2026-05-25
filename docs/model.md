@@ -177,3 +177,7 @@ scikit-learn>=1.3.2
    - Model quantization
    - Pruning for edge devices
    - Batch prediction support
+
+# Results
+
+[checkout -> images](./results.md)

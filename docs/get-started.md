@@ -233,6 +233,7 @@ smart-compost/
 ├── models/                # Directory for saving trained models
 ├── logs/                  # Directory for application logs
 └── requirements.txt       # Python dependencies
+```
 
 ## 📞 Support
 
